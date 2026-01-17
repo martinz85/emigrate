@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold
+           hover:bg-primary-600 transition-all duration-200
+           shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30
+           active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-primary-500 px-6 py-3 rounded-lg font-semibold
+           border-2 border-primary-500 hover:bg-primary-50
+           transition-all duration-200;
+  }
+  
+  .btn-cta {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-500 text-white
+           px-8 py-4 rounded-xl font-bold text-lg
+           hover:from-emerald-600 hover:to-teal-600
+           transition-all duration-200
+           shadow-lg shadow-emerald-500/30 hover:shadow-xl
+           active:scale-95;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-lg shadow-slate-200/50
+           border border-slate-100 p-6;
+  }
+  
+  .card-hover {
+    @apply card hover:shadow-xl hover:shadow-slate-200/60
+           hover:-translate-y-1 transition-all duration-300;
+  }
+  
+  .section-title {
+    @apply font-heading text-3xl md:text-4xl font-bold text-slate-900;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-500 to-secondary-500
+           bg-clip-text text-transparent;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400;
+}
+
+/* Rating buttons */
+.rating-btn {
+  @apply w-14 h-14 rounded-xl border-2 border-slate-200 
+         flex flex-col items-center justify-center
+         hover:border-primary-500 hover:bg-primary-50
+         transition-all duration-200 cursor-pointer;
+}
+
+.rating-btn.selected {
+  @apply border-primary-500 bg-primary-500 text-white;
+}
+
+/* Chat bubbles */
+.chat-bubble-ai {
+  @apply bg-white rounded-2xl rounded-tl-sm p-4 shadow-md
+         border border-slate-100 max-w-[80%];
+}
+
+.chat-bubble-user {
+  @apply bg-primary-500 text-white rounded-2xl rounded-tr-sm p-4
+         shadow-md max-w-[80%] ml-auto;
+}
+
+/* Progress bar */
+.progress-bar {
+  @apply h-3 bg-slate-200 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full bg-gradient-to-r from-primary-500 to-secondary-500
+         rounded-full transition-all duration-500;
+}
+
+/* Score badges */
+.score-excellent {
+  @apply bg-success-light text-green-800;
+}
+
+.score-good {
+  @apply bg-warning-light text-amber-800;
+}
+
+.score-poor {
+  @apply bg-danger-light text-red-800;
+}
+
