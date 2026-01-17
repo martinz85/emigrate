@@ -1,0 +1,25 @@
+# Word temp files
+~$*.docx
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+
+# BMAD output (optional - remove if you want to track output)
+# _bmad-output/
+

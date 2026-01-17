@@ -1,0 +1,34 @@
+---
+description: Always use Bash instead of PowerShell for terminal commands
+globs: 
+alwaysApply: true
+---
+
+# Shell Configuration Rule
+
+## ALWAYS USE BASH
+
+When running terminal commands:
+
+1. **Use Git Bash or WSL Bash** instead of PowerShell or CMD
+2. **Shell path**: Use `C:\Program Files\Git\bin\bash.exe` or WSL bash
+3. **Syntax**: Use Unix/Linux command syntax (ls, cat, grep, etc.) instead of PowerShell equivalents
+
+## Command Examples
+
+| ❌ PowerShell | ✅ Bash |
+|---------------|---------|
+| `Get-ChildItem` | `ls -la` |
+| `Get-Content` | `cat` |
+| `Select-String` | `grep` |
+| `Remove-Item` | `rm` |
+| `Copy-Item` | `cp` |
+| `Move-Item` | `mv` |
+| `New-Item -ItemType Directory` | `mkdir -p` |
+
+## Why Bash?
+
+- Cross-platform compatibility
+- Standard Unix tooling
+- Better scripting capabilities
+- Consistent with Linux/macOS environments
