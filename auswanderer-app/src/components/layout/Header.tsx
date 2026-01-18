@@ -20,10 +20,10 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#so-funktionierts" className="text-slate-600 hover:text-primary-500 transition-colors">
+            <Link href="/#so-funktionierts" className="text-slate-600 hover:text-primary-500 transition-colors">
               So funktioniert&apos;s
             </Link>
-            <Link href="#preise" className="text-slate-600 hover:text-primary-500 transition-colors">
+            <Link href="/#preise" className="text-slate-600 hover:text-primary-500 transition-colors">
               Preise
             </Link>
             <Link href="/ebooks" className="text-slate-600 hover:text-primary-500 transition-colors">
@@ -57,20 +57,40 @@ export function Header() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-slate-200">
-            <nav className="flex flex-col gap-4">
-              <Link href="#so-funktionierts" className="text-slate-600 hover:text-primary-500 py-2">
+            <nav className="flex flex-col gap-2">
+              <Link 
+                href="/#so-funktionierts" 
+                className="text-slate-600 hover:text-primary-500 py-3 min-h-[48px] flex items-center"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 So funktioniert&apos;s
               </Link>
-              <Link href="#preise" className="text-slate-600 hover:text-primary-500 py-2">
+              <Link 
+                href="/#preise" 
+                className="text-slate-600 hover:text-primary-500 py-3 min-h-[48px] flex items-center"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Preise
               </Link>
-              <Link href="/ebooks" className="text-slate-600 hover:text-primary-500 py-2">
+              <Link 
+                href="/ebooks" 
+                className="text-slate-600 hover:text-primary-500 py-3 min-h-[48px] flex items-center"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 E-Books
               </Link>
-              <Link href="/login" className="text-slate-600 hover:text-primary-500 py-2">
+              <Link 
+                href="/login" 
+                className="text-slate-600 hover:text-primary-500 py-3 min-h-[48px] flex items-center"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Login
               </Link>
-              <Link href="/analyse" className="btn-primary text-center">
+              <Link 
+                href="/analyse" 
+                className="btn-primary text-center mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
                 Kostenlos starten
               </Link>
             </nav>

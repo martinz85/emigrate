@@ -6,7 +6,7 @@ export function HeroSection() {
       {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,7 +38,7 @@ export function HeroSection() {
               <span>🚀</span>
               Kostenlos starten
             </Link>
-            <Link href="#so-funktionierts" className="btn-secondary flex items-center justify-center gap-2">
+            <Link href="/#so-funktionierts" className="btn-secondary flex items-center justify-center gap-2">
               So funktioniert&apos;s
               <span>→</span>
             </Link>
@@ -76,11 +76,11 @@ export function HeroSection() {
             </div>
           </div>
           
-          {/* Floating stats */}
+          {/* Floating badge */}
           <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-4">
             <div className="bg-white rounded-full px-4 py-2 shadow-lg text-sm font-medium flex items-center gap-2">
               <span className="text-2xl">🎯</span>
-              10.000+ Analysen
+              Personalisierte Analyse
             </div>
           </div>
         </div>
