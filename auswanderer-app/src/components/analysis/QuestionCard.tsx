@@ -42,10 +42,12 @@ export function QuestionCard({
 
       {/* Info Button */}
       <button
+        type="button"
         onClick={() => setShowInfo(true)}
-        className="text-slate-400 hover:text-primary-500 transition-colors mb-8 inline-flex items-center gap-1 text-sm"
+        aria-label={`Mehr Informationen zu: ${criterion.name}`}
+        className="text-slate-400 hover:text-primary-500 transition-colors mb-8 inline-flex items-center gap-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-md px-2 py-1"
       >
-        <span>ℹ️</span>
+        <span aria-hidden="true">ℹ️</span>
         <span>Mehr erfahren</span>
       </button>
 

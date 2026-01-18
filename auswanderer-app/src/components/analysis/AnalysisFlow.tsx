@@ -102,8 +102,12 @@ export function AnalysisFlow() {
       }
 
       // Auto-advance after 300ms
+      // Get fresh state in timeout to avoid stale closure
       timeoutRef.current = setTimeout(() => {
-        if (isLastQuestion) {
+        const { currentCriterionIndex } = useAnalysisStore.getState()
+        const isLast = currentCriterionIndex >= CRITERIA.length - 1
+        
+        if (isLast) {
           setStep('loading')
           submitAnalysis()
         } else {
@@ -111,7 +115,7 @@ export function AnalysisFlow() {
         }
       }, 300)
     },
-    [currentCriterion, isLastQuestion, nextCriterion, setRating, setStep, submitAnalysis, isSubmitting]
+    [currentCriterion, nextCriterion, setRating, setStep, submitAnalysis, isSubmitting]
   )
 
   const handleBack = useCallback(() => {
@@ -132,10 +136,6 @@ export function AnalysisFlow() {
     setStep('loading')
     submitAnalysis()
   }, [setStep, submitAnalysis])
-
-  const handleLoadingComplete = useCallback(() => {
-    // Loading complete - navigation happens in submitAnalysis
-  }, [])
 
   // Show loading state until hydration
   if (!isHydrated) {
@@ -198,7 +198,7 @@ export function AnalysisFlow() {
         )}
 
         {currentStep === 'loading' && (
-          <LoadingScreen onComplete={handleLoadingComplete} duration={5000} />
+          <LoadingScreen duration={5000} />
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Progress } from '@/components/ui/progress'
 
 const FUN_FACTS = [
@@ -24,6 +24,10 @@ interface LoadingScreenProps {
 export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProps) {
   const [progress, setProgress] = useState(0)
   const [currentFact, setCurrentFact] = useState(0)
+  
+  // Use ref to avoid stale callback reference in useEffect
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
 
   useEffect(() => {
     // Progress animation
@@ -42,9 +46,9 @@ export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProp
       setCurrentFact((prev) => (prev + 1) % FUN_FACTS.length)
     }, 2500)
 
-    // Complete callback
+    // Complete callback - use ref to get latest callback
     const timeout = setTimeout(() => {
-      onComplete?.()
+      onCompleteRef.current?.()
     }, duration)
 
     return () => {
@@ -52,14 +56,14 @@ export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProp
       clearInterval(factInterval)
       clearTimeout(timeout)
     }
-  }, [duration, onComplete])
+  }, [duration]) // Only depend on duration, not onComplete
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
       {/* Animated Globe */}
       <div className="relative mb-8">
-        <span className="text-8xl animate-pulse">🌍</span>
-        <div className="absolute inset-0 bg-primary-500/20 rounded-full blur-2xl animate-ping" />
+        <span className="text-8xl animate-pulse" aria-hidden="true">🌍</span>
+        <div className="absolute inset-0 bg-primary-500/20 rounded-full blur-2xl animate-ping" aria-hidden="true" />
       </div>
 
       {/* Title */}
@@ -69,13 +73,13 @@ export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProp
 
       {/* Progress Bar */}
       <div className="w-full max-w-md mb-8">
-        <Progress value={progress} className="h-3" />
-        <p className="text-center text-sm text-slate-500 mt-2">{Math.round(progress)}%</p>
+        <Progress value={progress} className="h-3" aria-label="Analysefortschritt" />
+        <p className="text-center text-sm text-slate-500 mt-2" aria-live="polite">{Math.round(progress)}%</p>
       </div>
 
       {/* Fun Fact */}
       <div className="bg-primary-50 rounded-xl p-4 max-w-md text-center">
-        <p className="text-primary-800 font-medium transition-opacity duration-500">
+        <p className="text-primary-800 font-medium transition-opacity duration-500" aria-live="polite">
           {FUN_FACTS[currentFact]}
         </p>
       </div>
@@ -87,4 +91,3 @@ export function LoadingScreen({ onComplete, duration = 5000 }: LoadingScreenProp
     </div>
   )
 }
-
