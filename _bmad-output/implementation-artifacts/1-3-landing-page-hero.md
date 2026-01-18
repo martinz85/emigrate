@@ -1,6 +1,6 @@
 # Story 1.3: Landing Page Hero
 
-Status: review
+Status: done
 
 ## Story
 

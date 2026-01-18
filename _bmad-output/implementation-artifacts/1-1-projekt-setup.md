@@ -1,6 +1,6 @@
 # Story 1.1: Projekt-Setup
 
-Status: review
+Status: done
 
 ## Story
 

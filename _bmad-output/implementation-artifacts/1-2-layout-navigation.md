@@ -1,6 +1,6 @@
 # Story 1.2: Layout & Navigation
 
-Status: review
+Status: done
 
 ## Story
 
