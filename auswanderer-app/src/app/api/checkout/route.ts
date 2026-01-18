@@ -172,9 +172,46 @@ export async function GET(request: NextRequest) {
     // Retrieve session from Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId)
 
+    // Validate payment status
     if (session.payment_status !== 'paid') {
       return NextResponse.json(
         { error: 'Zahlung nicht abgeschlossen' },
+        { status: 400 }
+      )
+    }
+
+    // FIX: Validate amount matches expected price (prevent underpayment attacks)
+    if (session.amount_total !== ANALYSIS_PRODUCT.price) {
+      console.error(`Invalid amount in session verification: ${session.amount_total}, expected: ${ANALYSIS_PRODUCT.price}`)
+      return NextResponse.json(
+        { error: 'Ungültiger Zahlungsbetrag' },
+        { status: 400 }
+      )
+    }
+
+    // FIX: Validate currency
+    if (session.currency?.toLowerCase() !== ANALYSIS_PRODUCT.currency) {
+      console.error(`Invalid currency in session verification: ${session.currency}`)
+      return NextResponse.json(
+        { error: 'Ungültige Währung' },
+        { status: 400 }
+      )
+    }
+
+    // FIX: Validate product type from metadata
+    if (session.metadata?.product !== 'analysis') {
+      console.error(`Invalid product in session: ${session.metadata?.product}`)
+      return NextResponse.json(
+        { error: 'Ungültiges Produkt' },
+        { status: 400 }
+      )
+    }
+
+    // FIX: Validate mode
+    if (session.mode !== 'payment') {
+      console.error(`Invalid mode in session: ${session.mode}`)
+      return NextResponse.json(
+        { error: 'Ungültiger Zahlungsmodus' },
         { status: 400 }
       )
     }
