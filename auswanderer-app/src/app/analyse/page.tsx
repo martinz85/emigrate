@@ -8,12 +8,12 @@ export const metadata = {
 
 export default function AnalysePage() {
   return (
-    <main className="min-h-screen bg-slate-50">
+    <>
       <Header />
-      <div className="pt-20">
+      <main id="main-content" className="min-h-screen bg-slate-50 pt-20">
         <AnalysisChat />
-      </div>
-    </main>
+      </main>
+    </>
   )
 }
 
