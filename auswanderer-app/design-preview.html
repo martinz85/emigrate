@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auswanderer-Plattform - Design Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0F766E;
+      --primary-hover: #0D6560;
+      --secondary: #F59E0B;
+      --secondary-hover: #D97706;
+      --background: #FAFAF9;
+      --foreground: #1C1917;
+      --muted: #78716C;
+      --card: #FFFFFF;
+      --border: #E7E5E4;
+      --success: #16A34A;
+      --error: #DC2626;
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: var(--current-font, 'Inter'), sans-serif;
+      background: var(--background);
+      color: var(--foreground);
+      line-height: 1.5;
+    }
+    
+    .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 36px; font-weight: 700; margin-bottom: 16px; }
+    h2 { font-size: 24px; font-weight: 600; margin-bottom: 12px; }
+    p { color: var(--muted); margin-bottom: 16px; }
+    
+    .font-switcher {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    
+    .font-options { display: flex; gap: 12px; flex-wrap: wrap; }
+    
+    .font-btn {
+      padding: 12px 24px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    
+    .font-btn:hover { border-color: var(--primary); }
+    .font-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+    
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 16px;
+    }
+    
+    .color-swatch { text-align: center; }
+    .color-box {
+      width: 100%;
+      height: 80px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+    }
+    .color-name { font-weight: 600; font-size: 14px; }
+    .color-value { font-size: 12px; color: var(--muted); }
+    
+    .button-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: var(--secondary); color: white; }
+    .btn-secondary:hover { background: var(--secondary-hover); }
+    .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+    .btn-outline:hover { background: var(--primary); color: white; }
+    
+    .rating-buttons { display: flex; gap: 8px; justify-content: center; margin: 24px 0; }
+    
+    .rating-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: var(--card);
+      font-size: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .rating-btn:hover { border-color: var(--primary); transform: scale(1.05); }
+    .rating-btn.selected { background: var(--primary); border-color: var(--primary); color: white; }
+    
+    .rating-label { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
+    
+    .progress-container { margin: 24px 0; }
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .progress-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.3s; }
+    
+    .result-card {
+      background: linear-gradient(135deg, var(--primary) 0%, #0D6560 100%);
+      border-radius: 16px;
+      padding: 32px;
+      color: white;
+      text-align: center;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    
+    .result-match { font-size: 64px; font-weight: 700; margin-bottom: 8px; }
+    .result-text { font-size: 18px; opacity: 0.9; margin-bottom: 24px; }
+    .result-hidden { background: rgba(255,255,255,0.2); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .result-lock { font-size: 32px; margin-bottom: 8px; }
+    
+    .btn-reveal {
+      background: var(--secondary);
+      color: white;
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    .type-scale { display: flex; flex-direction: column; gap: 16px; }
+    .type-sample { display: flex; align-items: baseline; gap: 16px; }
+    .type-label { width: 80px; font-size: 12px; color: var(--muted); flex-shrink: 0; }
+    .type-h1 { font-size: 36px; font-weight: 700; }
+    .type-h2 { font-size: 24px; font-weight: 600; }
+    .type-h3 { font-size: 18px; font-weight: 600; }
+    .type-body { font-size: 16px; }
+    .type-small { font-size: 14px; color: var(--muted); }
+    
+    .mobile-frame {
+      max-width: 375px;
+      margin: 0 auto;
+      border: 8px solid #1C1917;
+      border-radius: 32px;
+      overflow: hidden;
+      background: var(--background);
+    }
+    
+    .mobile-content { padding: 16px; }
+    .mobile-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; margin-bottom: 16px; }
+    .back-btn { font-size: 14px; color: var(--primary); }
+    .step-indicator { font-size: 14px; color: var(--muted); }
+    
+    .question-card { text-align: center; padding: 16px 0; }
+    .question-icon { font-size: 48px; margin-bottom: 16px; }
+    .question-text { font-size: 20px; font-weight: 600; color: var(--foreground); margin-bottom: 8px; }
+    .question-info { font-size: 14px; color: var(--primary); cursor: pointer; margin-bottom: 24px; display: block; }
+    
+    .hero-preview {
+      background: linear-gradient(135deg, #FAFAF9 0%, #F5F5F4 100%);
+      border-radius: 16px;
+      padding: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+    
+    @media (max-width: 600px) { .hero-preview { grid-template-columns: 1fr; } }
+    
+    .hero-text h1 { font-size: 32px; margin-bottom: 12px; }
+    .hero-text p { font-size: 18px; margin-bottom: 24px; }
+    
+    .hero-demo {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Auswanderer-Plattform Design Preview</h1>
+    <p>Interaktive Vorschau der Farben, Typografie und UI-Elemente</p>
+    
+    <!-- Font Switcher -->
+    <div class="font-switcher">
+      <div class="section-title">Font wählen</div>
+      <div class="font-options">
+        <button class="font-btn active" onclick="setFont('Inter', this)" style="font-family: Inter">Inter (sicher)</button>
+        <button class="font-btn" onclick="setFont('Space Grotesk', this)" style="font-family: Space Grotesk">Space Grotesk</button>
+        <button class="font-btn" onclick="setFont('DM Sans', this)" style="font-family: DM Sans">DM Sans</button>
+      </div>
+    </div>
+    
+    <!-- Color Palette -->
+    <div class="section">
+      <div class="section-title">Farbpalette</div>
+      <div class="color-grid">
+        <div class="color-swatch">
+          <div class="color-box" style="background: #0F766E"></div>
+          <div class="color-name">Primary</div>
+          <div class="color-value">#0F766E (Teal)</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #F59E0B"></div>
+          <div class="color-name">Secondary</div>
+          <div class="color-value">#F59E0B (Amber)</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #FAFAF9"></div>
+          <div class="color-name">Background</div>
+          <div class="color-value">#FAFAF9</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #1C1917"></div>
+          <div class="color-name">Foreground</div>
+          <div class="color-value">#1C1917</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #78716C"></div>
+          <div class="color-name">Muted</div>
+          <div class="color-value">#78716C</div>
+        </div>
+        <div class="color-swatch">
+          <div class="color-box" style="background: #16A34A"></div>
+          <div class="color-name">Success</div>
+          <div class="color-value">#16A34A</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Typography -->
+    <div class="section">
+      <div class="section-title">Typografie Scale</div>
+      <div class="type-scale">
+        <div class="type-sample"><span class="type-label">H1 (36px)</span><span class="type-h1">Finde dein Traumland</span></div>
+        <div class="type-sample"><span class="type-label">H2 (24px)</span><span class="type-h2">Persönliche Analyse</span></div>
+        <div class="type-sample"><span class="type-label">H3 (18px)</span><span class="type-h3">Wie wichtig ist dir...</span></div>
+        <div class="type-sample"><span class="type-label">Body (16px)</span><span class="type-body">Unser AI-Assistent analysiert 28 personalisierte Kriterien.</span></div>
+        <div class="type-sample"><span class="type-label">Small (14px)</span><span class="type-small">Frage 8 von 28 · Kategorie: Lifestyle</span></div>
+      </div>
+    </div>
+    
+    <!-- Buttons -->
+    <div class="section">
+      <div class="section-title">Buttons</div>
+      <div class="button-row">
+        <button class="btn btn-primary">Analyse starten</button>
+        <button class="btn btn-secondary">Jetzt freischalten</button>
+        <button class="btn btn-outline">Mehr erfahren</button>
+      </div>
+    </div>
+    
+    <!-- Rating Buttons -->
+    <div class="section">
+      <div class="section-title">Rating Buttons (1-5)</div>
+      <div class="rating-buttons">
+        <button class="rating-btn" onclick="selectRating(this)">1</button>
+        <button class="rating-btn" onclick="selectRating(this)">2</button>
+        <button class="rating-btn selected" onclick="selectRating(this)">3</button>
+        <button class="rating-btn" onclick="selectRating(this)">4</button>
+        <button class="rating-btn" onclick="selectRating(this)">5</button>
+      </div>
+      <div class="rating-label"><span>egal</span><span>sehr wichtig</span></div>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="section">
+      <div class="section-title">Fortschrittsanzeige</div>
+      <div class="progress-container">
+        <div class="progress-header"><span>Frage 8 von 28</span><span>30%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width: 30%"></div></div>
+      </div>
+    </div>
+    
+    <!-- Question Card Preview -->
+    <div class="section">
+      <div class="section-title">Frage-Screen (Mobile)</div>
+      <div class="mobile-frame">
+        <div class="mobile-content">
+          <div class="mobile-header">
+            <span class="back-btn">← Zurück</span>
+            <span class="step-indicator">Frage 8 von 28</span>
+          </div>
+          <div class="progress-bar" style="margin-bottom: 24px;"><div class="progress-fill" style="width: 30%"></div></div>
+          <div class="question-card">
+            <div class="question-icon">🌡️</div>
+            <div class="question-text">Wie wichtig ist dir warmes Klima?</div>
+            <span class="question-info">ℹ️ Mehr erfahren</span>
+            <div class="rating-buttons" style="margin: 16px 0;">
+              <button class="rating-btn" style="width: 48px; height: 48px;">1</button>
+              <button class="rating-btn" style="width: 48px; height: 48px;">2</button>
+              <button class="rating-btn" style="width: 48px; height: 48px;">3</button>
+              <button class="rating-btn" style="width: 48px; height: 48px;">4</button>
+              <button class="rating-btn" style="width: 48px; height: 48px;">5</button>
+            </div>
+            <div class="rating-label"><span>egal</span><span>sehr wichtig</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Result Teaser Preview -->
+    <div class="section">
+      <div class="section-title">Ergebnis-Teaser (vor Kauf)</div>
+      <div class="result-card">
+        <div class="result-match">94%</div>
+        <div class="result-text">Wir haben dein perfektes Land gefunden!</div>
+        <div class="result-hidden">
+          <div class="result-lock">🔒</div>
+          <div>Dein Top-Match</div>
+        </div>
+        <button class="btn-reveal">🔓 Jetzt freischalten – 29,99€</button>
+      </div>
+    </div>
+    
+    <!-- Hero Section Preview -->
+    <div class="section">
+      <div class="section-title">Landing Page Hero</div>
+      <div class="hero-preview">
+        <div class="hero-text">
+          <h1>Finde dein perfektes Auswanderland</h1>
+          <p>Mit 28 Fragen zu deiner persönlichen Analyse.</p>
+          <button class="btn btn-primary">Jetzt starten →</button>
+        </div>
+        <div class="hero-demo">
+          <div style="font-size: 14px; color: #78716C; margin-bottom: 8px;">Frage 5 von 28</div>
+          <div class="progress-bar" style="margin-bottom: 16px;"><div class="progress-fill" style="width: 18%"></div></div>
+          <div style="text-align: center; padding: 16px 0;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🌴</div>
+            <div style="font-weight: 600; margin-bottom: 16px;">Wie wichtig ist dir Naturzugang?</div>
+            <div class="rating-buttons" style="margin: 0; justify-content: center;">
+              <button class="rating-btn" style="width: 40px; height: 40px; font-size: 14px;">1</button>
+              <button class="rating-btn" style="width: 40px; height: 40px; font-size: 14px;">2</button>
+              <button class="rating-btn selected" style="width: 40px; height: 40px; font-size: 14px;">3</button>
+              <button class="rating-btn" style="width: 40px; height: 40px; font-size: 14px;">4</button>
+              <button class="rating-btn" style="width: 40px; height: 40px; font-size: 14px;">5</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function setFont(font, btn) {
+      document.body.style.fontFamily = font + ', sans-serif';
+      document.querySelectorAll('.font-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    
+    function selectRating(btn) {
+      btn.parentElement.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+  </script>
+</body>
+</html>
+

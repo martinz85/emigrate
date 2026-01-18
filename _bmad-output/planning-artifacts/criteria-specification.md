@@ -1,11 +1,36 @@
-# 26 Kriterien - Fragen & Bewertungslogik
+# 29 Kriterien - Fragen & Bewertungslogik
 
-**Version:** 1.0
+**Version:** 1.1
 **Erstellt:** 2026-01-17
+**Aktualisiert:** 2026-01-18
 
 ---
 
 ## Uebersicht
+
+### Zusätzliche Eingabe-Fragen (vor den Kriterien)
+
+Diese Fragen werden VOR den 27 Rating-Fragen gestellt:
+
+#### Frage A: Länder-Interesse
+
+> "Welche Länder interessieren dich bereits? (optional)"
+
+**Eingabetyp:** Multi-Select oder Freitext
+**Zweck:** AI kann gezielt auf diese Länder eingehen und vergleichen
+**Beispiel-Antworten:** "Portugal, Spanien" oder "Ich bin offen für alles"
+
+#### Frage B: Sonstige Wünsche
+
+> "Gibt es noch etwas, das dir besonders wichtig ist?"
+
+**Eingabetyp:** Freitext (optional)
+**Zweck:** Erfasst individuelle Wünsche die nicht in Kriterien abgedeckt sind
+**Beispiel-Antworten:** "Gute Surfmöglichkeiten", "Vegane Restaurants", "Golf-Plätze"
+
+---
+
+## Rating-Kriterien (29 Stück)
 
 Jedes Kriterium hat:
 1. **Frage an den Nutzer** - Zur Gewichtungsermittlung (1-5)
@@ -543,7 +568,35 @@ Jedes Kriterium hat:
 
 ---
 
-### 5.4 Dringlichkeit (Schnell-Modus)
+### 5.4 Infrastruktur
+
+**Hauptfrage:**
+> "Wie wichtig ist eine gute Infrastruktur (Strassen, OEPNV, Flughaefen)?"
+
+**AI-Folgefragen:**
+- "Hast du ein Auto oder bist du auf OEPNV angewiesen?"
+- "Wie oft fliegst du (z.B. fuer Arbeit oder Familienbesuche)?"
+- "Brauchst du Zugang zu einer Grossstadt?"
+
+**Gewichtungsinterpretation:**
+| Gewichtung | Bedeutung |
+|------------|-----------|
+| 1 | Kann ohne Auto/OEPNV leben |
+| 2 | Grundinfrastruktur reicht |
+| 3 | Sollte gut sein |
+| 4 | Wichtig - brauche gute Anbindung |
+| 5 | Kritisch - muss exzellent sein |
+
+**Laender-Bewertungslogik:**
+| Symbol | Kriterium | Beispiellaender |
+|--------|-----------|-----------------|
+| ++ | Exzellente Strassen, OEPNV, viele Flughaefen | Deutschland, Schweiz, Niederlande, Japan |
+| o | Gute Infrastruktur in Staedten | Spanien, Portugal, Italien |
+| -- | Schlechte Strassen, kaum OEPNV | Entwicklungslaender, laendliche Gebiete |
+
+---
+
+### 5.5 Dringlichkeit (Schnell-Modus)
 
 **Hauptfrage:**
 > "Wie schnell moechtest/musst du auswandern?"
@@ -566,7 +619,7 @@ Jedes Kriterium hat:
 
 ---
 
-### 5.5 Zeitzone
+### 5.6 Zeitzone
 
 **Hauptfrage:**
 > "Wie wichtig ist eine kompatible Zeitzone (z.B. fuer Remote-Arbeit mit EU)?"

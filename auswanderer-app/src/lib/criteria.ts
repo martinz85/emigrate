@@ -24,6 +24,7 @@ export type CriterionCategory =
   | 'social'
   | 'career'
   | 'family'
+  | 'real_estate'
 
 export const CRITERIA: Criterion[] = [
   // FINANCIAL (4)
@@ -217,6 +218,21 @@ export const CRITERIA: Criterion[] = [
     description: 'Für Remote Worker besonders relevant.',
   },
   {
+    id: 'infrastructure',
+    category: 'personal',
+    name: 'Infrastruktur',
+    question: 'Wie wichtig ist eine gute Infrastruktur (Straßen, ÖPNV, Flughäfen)?',
+    description: 'Verkehrsanbindung, öffentlicher Nahverkehr, Flugverbindungen.',
+    followUpQuestions: [
+      {
+        id: 'transport_mode',
+        question: 'Hast du ein Auto oder bist du auf ÖPNV angewiesen?',
+        type: 'select',
+        options: ['Eigenes Auto', 'ÖPNV', 'Beides', 'Fahrrad/Zu Fuß'],
+      },
+    ],
+  },
+  {
     id: 'urgency',
     category: 'personal',
     name: 'Dringlichkeit (Schnell-Modus)',
@@ -273,6 +289,23 @@ export const CRITERIA: Criterion[] = [
     question: 'Wie wichtig ist allgemein hohe Lebensqualität?',
     description: 'HDI, Lebenserwartung, allgemeines Wohlbefinden.',
   },
+
+  // REAL ESTATE (1)
+  {
+    id: 'real_estate_market',
+    category: 'real_estate',
+    name: 'Immobilienmarkt & Grundstückskauf',
+    question: 'Wie wichtig ist es, dass du Immobilien/Grundstücke im Zielland kaufen kannst?',
+    description: 'Möglichkeiten für Ausländer zum Erwerb von Eigentum, Marktpreise, Beschränkungen.',
+    followUpQuestions: [
+      {
+        id: 'purchase_intent',
+        question: 'Planst du, eine Immobilie oder ein Grundstück zu kaufen?',
+        type: 'select',
+        options: ['Ja, definitiv', 'Vielleicht, wenn es passt', 'Nein, ich möchte mieten'],
+      },
+    ],
+  },
 ]
 
 export const CATEGORY_LABELS: Record<CriterionCategory, string> = {
@@ -285,6 +318,7 @@ export const CATEGORY_LABELS: Record<CriterionCategory, string> = {
   social: 'Sozial',
   career: 'Karriere',
   family: 'Familie+',
+  real_estate: 'Immobilien',
 }
 
 export const CATEGORY_ICONS: Record<CriterionCategory, string> = {
@@ -297,5 +331,39 @@ export const CATEGORY_ICONS: Record<CriterionCategory, string> = {
   social: '🤝',
   career: '💼',
   family: '👶',
+  real_estate: '🏠',
 }
+
+// Pre-Analysis Questions (asked before rating criteria)
+export interface PreAnalysisQuestion {
+  id: string
+  question: string
+  type: 'text' | 'multiselect'
+  placeholder?: string
+  options?: string[]
+  optional: boolean
+}
+
+export const PRE_ANALYSIS_QUESTIONS: PreAnalysisQuestion[] = [
+  {
+    id: 'countries_of_interest',
+    question: 'Welche Länder interessieren dich bereits?',
+    type: 'multiselect',
+    options: [
+      'Portugal', 'Spanien', 'Italien', 'Griechenland', 'Zypern',
+      'Schweiz', 'Österreich', 'Niederlande', 'Schweden', 'Norwegen',
+      'Thailand', 'Bali/Indonesien', 'Japan', 'Australien', 'Neuseeland',
+      'USA', 'Kanada', 'Mexiko', 'Costa Rica', 'Uruguay',
+      'UAE/Dubai', 'Andere', 'Ich bin offen für alles'
+    ],
+    optional: true,
+  },
+  {
+    id: 'special_wishes',
+    question: 'Gibt es noch etwas, das dir besonders wichtig ist?',
+    type: 'text',
+    placeholder: 'z.B. Gute Surfmöglichkeiten, vegane Restaurants, Golf-Plätze...',
+    optional: true,
+  },
+]
 
