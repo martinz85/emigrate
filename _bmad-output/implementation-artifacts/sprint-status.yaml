@@ -54,7 +54,7 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: AI Analysis Flow
-  epic-2: in-progress
+  epic-2: done
   2-1-analysis-page-setup: done
   2-2-pre-analysis-questions: done
   2-3-rating-ui-component: done
@@ -66,11 +66,11 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Results & Freemium Preview
-  epic-3: backlog
-  3-1-result-teaser-page: backlog
-  3-2-match-score-animation: backlog
-  3-3-locked-country-display: backlog
-  3-4-purchase-cta: backlog
+  epic-3: done
+  3-1-result-teaser-page: done
+  3-2-match-score-animation: done
+  3-3-locked-country-display: done
+  3-4-purchase-cta: done
   epic-3-retrospective: optional
 
   # Epic 4: Payment & Purchase
