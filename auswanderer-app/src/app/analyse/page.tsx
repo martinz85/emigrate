@@ -1,4 +1,5 @@
 import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import { AnalysisChat } from '@/components/analysis/AnalysisChat'
 
 export const metadata = {
@@ -13,7 +14,7 @@ export default function AnalysePage() {
       <div className="pt-20">
         <AnalysisChat />
       </div>
+      <Footer />
     </main>
   )
 }
-

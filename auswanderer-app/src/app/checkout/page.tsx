@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 import Link from 'next/link'
 
 function CheckoutContent() {
@@ -193,6 +194,7 @@ function CheckoutContent() {
           </div>
         </div>
       </div>
+      <Footer />
     </main>
   )
 }
@@ -211,4 +213,3 @@ export default function CheckoutPage() {
     </Suspense>
   )
 }
-
