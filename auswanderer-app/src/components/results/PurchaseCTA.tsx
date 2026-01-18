@@ -8,6 +8,9 @@ interface PurchaseCTAProps {
 }
 
 export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps) {
+  // Encode analysisId for safe URL usage
+  const encodedId = encodeURIComponent(analysisId)
+
   return (
     <div className="bg-gradient-to-br from-primary-50 to-secondary-50 rounded-2xl p-8 text-center">
       {/* Headline */}
@@ -18,40 +21,39 @@ export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps
       {/* Benefits */}
       <div className="flex flex-wrap justify-center gap-4 mb-8">
         <div className="flex items-center gap-2 text-sm text-slate-600">
-          <span className="text-green-500">✓</span>
+          <span className="text-green-500" aria-hidden="true">✓</span>
           Land sofort enthüllen
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-600">
-          <span className="text-green-500">✓</span>
+          <span className="text-green-500" aria-hidden="true">✓</span>
           Detaillierte Analyse
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-600">
-          <span className="text-green-500">✓</span>
+          <span className="text-green-500" aria-hidden="true">✓</span>
           PDF zum Download
         </div>
       </div>
 
-      {/* CTA Button - Amber color for high visibility (AC: "Button ist im Amber-Farbton") */}
+      {/* CTA Button - AC: "Jetzt freischalten – 29,99€" in Amber */}
       <Link
-        href={`/checkout?analysisId=${analysisId}`}
-        className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+        href={`/checkout?analysisId=${encodedId}`}
+        className="inline-block bg-gradient-to-r from-amber-500 to-amber-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
       >
-        <span>Jetzt freischalten</span>
-        <span className="bg-white/20 px-3 py-1 rounded-lg text-lg">{price}</span>
+        Jetzt freischalten – {price}
       </Link>
 
       {/* Trust badges */}
       <div className="flex items-center justify-center gap-6 mt-6 text-sm text-slate-500">
         <div className="flex items-center gap-1">
-          <span>🔒</span>
+          <span aria-hidden="true">🔒</span>
           Sichere Zahlung
         </div>
         <div className="flex items-center gap-1">
-          <span>⚡</span>
+          <span aria-hidden="true">⚡</span>
           Sofort verfügbar
         </div>
         <div className="flex items-center gap-1">
-          <span>💳</span>
+          <span aria-hidden="true">💳</span>
           Stripe
         </div>
       </div>
@@ -63,4 +65,3 @@ export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps
     </div>
   )
 }
-

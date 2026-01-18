@@ -9,10 +9,24 @@ interface CountUpScoreProps {
 }
 
 export function CountUpScore({ targetValue, duration = 2500, suffix = '%' }: CountUpScoreProps) {
+  // Clamp targetValue to valid range (0-100 for percentage)
+  const clampedTarget = Math.max(0, Math.min(100, targetValue))
+  
   const [currentValue, setCurrentValue] = useState(0)
   const [isAnimating, setIsAnimating] = useState(true)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   const startTimeRef = useRef<number | null>(null)
   const rafRef = useRef<number | null>(null)
+
+  // Check for reduced motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setPrefersReducedMotion(mediaQuery.matches)
+
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches)
+    mediaQuery.addEventListener('change', handler)
+    return () => mediaQuery.removeEventListener('change', handler)
+  }, [])
 
   // Get color based on score
   const getScoreColor = (value: number) => {
@@ -38,7 +52,7 @@ export function CountUpScore({ targetValue, duration = 2500, suffix = '%' }: Cou
 
     // Easing function for smooth animation
     const easeOutQuart = 1 - Math.pow(1 - progress, 4)
-    const value = Math.round(easeOutQuart * targetValue)
+    const value = Math.round(easeOutQuart * clampedTarget)
 
     setCurrentValue(value)
 
@@ -47,17 +61,35 @@ export function CountUpScore({ targetValue, duration = 2500, suffix = '%' }: Cou
     } else {
       setIsAnimating(false)
     }
-  }, [duration, targetValue])
+  }, [duration, clampedTarget])
 
+  // Reset animation when targetValue changes
   useEffect(() => {
-    // Start animation
+    // Cancel any existing animation
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+    }
+
+    // Reset state for new animation
+    startTimeRef.current = null
+    setCurrentValue(0)
+    setIsAnimating(true)
+
+    // Skip animation if reduced motion is preferred
+    if (prefersReducedMotion) {
+      setCurrentValue(clampedTarget)
+      setIsAnimating(false)
+      return
+    }
+
+    // Start new animation
     rafRef.current = requestAnimationFrame(animate)
 
     // Pause animation when tab is not visible
     const handleVisibilityChange = () => {
       if (document.hidden && rafRef.current) {
         cancelAnimationFrame(rafRef.current)
-      } else if (!document.hidden && isAnimating) {
+      } else if (!document.hidden && isAnimating && !prefersReducedMotion) {
         rafRef.current = requestAnimationFrame(animate)
       }
     }
@@ -70,7 +102,7 @@ export function CountUpScore({ targetValue, duration = 2500, suffix = '%' }: Cou
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [animate, isAnimating])
+  }, [animate, clampedTarget, prefersReducedMotion]) // Removed isAnimating to prevent loop
 
   return (
     <div className="text-center relative">
@@ -82,6 +114,7 @@ export function CountUpScore({ targetValue, duration = 2500, suffix = '%' }: Cou
           <span 
             className={`text-6xl md:text-7xl font-bold ${getScoreColor(currentValue)} transition-colors duration-500`}
             aria-live={isAnimating ? 'off' : 'polite'}
+            aria-atomic="true"
           >
             {currentValue}
           </span>
@@ -92,8 +125,8 @@ export function CountUpScore({ targetValue, duration = 2500, suffix = '%' }: Cou
         </div>
       </div>
       
-      {/* Pulse animation while counting - now properly positioned */}
-      {isAnimating && (
+      {/* Pulse animation while counting - hidden for reduced motion */}
+      {isAnimating && !prefersReducedMotion && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-48 h-48 md:w-56 md:h-56 rounded-full animate-ping opacity-20 bg-primary-500" />
         </div>

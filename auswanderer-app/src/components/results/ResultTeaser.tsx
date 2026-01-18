@@ -51,7 +51,10 @@ export function ResultTeaser({ analysisId, result }: ResultTeaserProps) {
 
       {/* Locked Country - only receives name length, not actual name */}
       <div className="mb-12">
-        <LockedCountry nameLength={result.topCountryNameLength} />
+        <LockedCountry 
+          nameLength={result.topCountryNameLength} 
+          analysisId={analysisId}
+        />
       </div>
 
       {/* Teaser Info */}
