@@ -1,6 +1,7 @@
 'use client'
 
-import Link from 'next/link'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface PurchaseCTAProps {
   analysisId: string
@@ -8,8 +9,39 @@ interface PurchaseCTAProps {
 }
 
 export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps) {
-  // Encode analysisId for safe URL usage
-  const encodedId = encodeURIComponent(analysisId)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+
+  const handleCheckout = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysisId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Checkout fehlgeschlagen')
+      }
+
+      if (data.url) {
+        // Redirect to Stripe Checkout (or mock URL in dev)
+        router.push(data.url)
+      } else {
+        throw new Error('Keine Checkout-URL erhalten')
+      }
+    } catch (err) {
+      console.error('Checkout error:', err)
+      setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="bg-gradient-to-br from-primary-50 to-secondary-50 rounded-2xl p-8 text-center">
@@ -34,13 +66,49 @@ export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* CTA Button - AC: "Jetzt freischalten – 29,99€" in Amber */}
-      <Link
-        href={`/checkout?analysisId=${encodedId}`}
-        className="inline-block bg-gradient-to-r from-amber-500 to-amber-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
+      <button
+        onClick={handleCheckout}
+        disabled={isLoading}
+        className="inline-block bg-gradient-to-r from-amber-500 to-amber-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        aria-busy={isLoading}
       >
-        Jetzt freischalten – {price}
-      </Link>
+        {isLoading ? (
+          <span className="flex items-center gap-2">
+            <svg 
+              className="animate-spin h-5 w-5" 
+              xmlns="http://www.w3.org/2000/svg" 
+              fill="none" 
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle 
+                className="opacity-25" 
+                cx="12" 
+                cy="12" 
+                r="10" 
+                stroke="currentColor" 
+                strokeWidth="4"
+              />
+              <path 
+                className="opacity-75" 
+                fill="currentColor" 
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Wird geladen...
+          </span>
+        ) : (
+          `Jetzt freischalten – ${price}`
+        )}
+      </button>
 
       {/* Trust badges */}
       <div className="flex items-center justify-center gap-6 mt-6 text-sm text-slate-500">

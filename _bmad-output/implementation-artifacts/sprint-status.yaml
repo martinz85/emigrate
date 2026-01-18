@@ -74,11 +74,11 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Payment & Purchase
-  epic-4: backlog
-  4-1-stripe-checkout-session: backlog
-  4-2-checkout-redirect: backlog
-  4-3-stripe-webhook-handler: backlog
-  4-4-success-page: backlog
+  epic-4: done
+  4-1-stripe-checkout-session: done
+  4-2-checkout-redirect: done
+  4-3-stripe-webhook-handler: done
+  4-4-success-page: done
   epic-4-retrospective: optional
 
   # Epic 5: PDF Generation & Reveal
