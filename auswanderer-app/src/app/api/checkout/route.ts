@@ -25,11 +25,20 @@ const ANALYSIS_PRODUCT = {
   currency: 'eur',
 }
 
+// Validate analysisId format (UUID or simple ID)
+function isValidAnalysisId(id: string): boolean {
+  if (!id || typeof id !== 'string') return false
+  // Allow UUIDs and simple alphanumeric IDs (including "demo")
+  const validPattern = /^[a-zA-Z0-9-]{1,64}$/
+  return validPattern.test(id)
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { analysisId } = body
 
+    // Input validation
     if (!analysisId) {
       return NextResponse.json(
         { error: 'analysisId ist erforderlich' },
@@ -37,20 +46,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!isValidAnalysisId(analysisId)) {
+      return NextResponse.json(
+        { error: 'Ungültige analysisId' },
+        { status: 400 }
+      )
+    }
+
     const baseUrl = getBaseUrl()
 
-    // If Stripe is not configured, return mock URL for development
+    // CRITICAL: Block mock mode in production
     if (!stripe) {
-      console.warn('Stripe not configured - returning mock checkout URL')
+      if (process.env.NODE_ENV === 'production') {
+        console.error('CRITICAL: Stripe not configured in production!')
+        return NextResponse.json(
+          { error: 'Zahlungssystem nicht verfügbar' },
+          { status: 503 }
+        )
+      }
+
+      // Mock only in development
+      console.warn('Stripe not configured - returning mock checkout URL (DEV ONLY)')
       const mockSessionId = `cs_mock_${Date.now()}`
       return NextResponse.json({
-        url: `${baseUrl}/checkout/success?session_id=${mockSessionId}&analysisId=${analysisId}`,
+        url: `${baseUrl}/checkout/success?session_id=${mockSessionId}&analysisId=${encodeURIComponent(analysisId)}`,
         sessionId: mockSessionId,
         mock: true,
       })
     }
 
     // Create Stripe Checkout Session
+    // Include analysisId in success_url for immediate access (avoids extra API call)
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -67,14 +93,13 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'payment',
-      success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      // FIX: Include analysisId in success_url for robustness
+      success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&analysisId=${encodeURIComponent(analysisId)}`,
       cancel_url: `${baseUrl}/ergebnis/${encodeURIComponent(analysisId)}`,
       metadata: {
         analysisId,
         product: 'analysis',
       },
-      // Optional: Pre-fill customer email if available
-      // customer_email: email,
     })
 
     return NextResponse.json({
@@ -112,8 +137,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Handle mock sessions for development
+    // Handle mock sessions for development ONLY
     if (sessionId.startsWith('cs_mock_')) {
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'Ungültige Session' },
+          { status: 400 }
+        )
+      }
       const analysisId = searchParams.get('analysisId') || 'demo'
       return NextResponse.json({
         verified: true,

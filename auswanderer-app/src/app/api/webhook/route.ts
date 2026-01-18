@@ -11,6 +11,9 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 /**
  * Stripe Webhook Handler
  * Receives and processes payment events from Stripe
+ * 
+ * Note: In Next.js App Router, the body is not automatically parsed,
+ * so request.text() returns the raw body needed for signature verification.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +22,14 @@ export async function POST(request: NextRequest) {
 
     // If Stripe is not configured, log and return success (development mode)
     if (!stripe || !webhookSecret) {
-      console.warn('Stripe webhook not configured - skipping verification')
+      if (process.env.NODE_ENV === 'production') {
+        console.error('CRITICAL: Stripe webhook not configured in production!')
+        return NextResponse.json(
+          { error: 'Webhook nicht konfiguriert' },
+          { status: 503 }
+        )
+      }
+      console.warn('Stripe webhook not configured - skipping verification (DEV ONLY)')
       console.log('Webhook received (dev mode):', body.substring(0, 100))
       return NextResponse.json({ received: true, mode: 'development' })
     }
@@ -50,7 +60,16 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
-        await handleCheckoutCompleted(session)
+        try {
+          await handleCheckoutCompleted(session)
+        } catch (dbError) {
+          // FIX: Return 500 so Stripe retries the webhook
+          console.error('Database error processing checkout:', dbError)
+          return NextResponse.json(
+            { error: 'Database error, please retry' },
+            { status: 500 }
+          )
+        }
         break
       }
 
@@ -89,10 +108,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const amountTotal = session.amount_total
   const paymentStatus = session.payment_status
 
+  // FIX: Mask PII in production logs (DSGVO compliance)
+  const maskedEmail = customerEmail 
+    ? (process.env.NODE_ENV === 'production' 
+        ? `${customerEmail.substring(0, 2)}***@***` 
+        : customerEmail)
+    : 'N/A'
+
   console.log('=== Checkout Session Completed ===')
   console.log(`Session ID: ${session.id}`)
   console.log(`Analysis ID: ${analysisId}`)
-  console.log(`Customer Email: ${customerEmail}`)
+  console.log(`Customer Email: ${maskedEmail}`)
   console.log(`Amount: ${amountTotal ? amountTotal / 100 : 0} EUR`)
   console.log(`Payment Status: ${paymentStatus}`)
   console.log('==================================')
@@ -102,13 +128,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return
   }
 
-  // TODO: Save purchase to Supabase when database is set up
+  // TODO: Save purchase to Supabase when database is set up (Epic 6)
   // This would:
   // 1. Mark the analysis as "paid" in the database
   // 2. Store the purchase record
   // 3. Optionally send a confirmation email
   
   /*
+  const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!
+  )
+
   await supabase.from('purchases').insert({
     analysis_id: analysisId,
     stripe_session_id: session.id,
@@ -125,11 +156,4 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   */
 
   console.log(`✅ Analysis ${analysisId} marked as paid`)
-}
-
-// Disable body parsing for raw body access (required for Stripe signature verification)
-export const config = {
-  api: {
-    bodyParser: false,
-  },
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -12,12 +12,17 @@ function SuccessContent() {
   const analysisIdFromUrl = searchParams.get('analysisId')
   
   const [countdown, setCountdown] = useState(5)
-  const [analysisId, setAnalysisId] = useState<string | null>(analysisIdFromUrl)
+  const [analysisId, setAnalysisId] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // FIX: Track mount state for race condition prevention
+  const isMountedRef = useRef(true)
 
-  // Verify session and get analysisId
+  // Verify session - ALWAYS verify, even if analysisId is in URL
   useEffect(() => {
+    isMountedRef.current = true
+
     if (!sessionId) {
       setError('Keine gültige Session gefunden')
       setIsVerifying(false)
@@ -26,59 +31,66 @@ function SuccessContent() {
 
     async function verifySession() {
       try {
-        // If we already have analysisId from URL (mock mode), skip verification
-        if (analysisIdFromUrl) {
-          setAnalysisId(analysisIdFromUrl)
-          setIsVerifying(false)
-          return
-        }
-
-        const res = await fetch(`/api/checkout?session_id=${sessionId}`)
+        // FIX: Always verify session, don't skip based on URL parameter
+        const res = await fetch(`/api/checkout?session_id=${encodeURIComponent(sessionId)}&analysisId=${encodeURIComponent(analysisIdFromUrl || '')}`)
         const data = await res.json()
 
-        if (!res.ok) {
+        if (!isMountedRef.current) return
+
+        if (!res.ok || !data.verified) {
           throw new Error(data.error || 'Verifizierung fehlgeschlagen')
         }
 
-        if (data.analysisId) {
-          setAnalysisId(data.analysisId)
-        } else {
-          // Fallback to demo if no analysisId
-          setAnalysisId('demo')
-        }
+        // Use verified analysisId from API, fallback to URL param, then 'demo'
+        setAnalysisId(data.analysisId || analysisIdFromUrl || 'demo')
       } catch (err) {
+        if (!isMountedRef.current) return
         console.error('Session verification error:', err)
         setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
       } finally {
-        setIsVerifying(false)
+        if (isMountedRef.current) {
+          setIsVerifying(false)
+        }
       }
     }
 
     verifySession()
+
+    return () => {
+      isMountedRef.current = false
+    }
   }, [sessionId, analysisIdFromUrl])
 
-  // Auto-redirect countdown
+  // Auto-redirect countdown - FIX: Proper cleanup to prevent race condition
   useEffect(() => {
     if (isVerifying || error || !analysisId) return
+
+    let localMounted = true
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          router.push(`/ergebnis/${analysisId}?unlocked=true`)
+          // FIX: Check mount state before navigation
+          if (localMounted && isMountedRef.current) {
+            router.push(`/ergebnis/${encodeURIComponent(analysisId)}?unlocked=true`)
+          }
           return 0
         }
         return prev - 1
       })
     }, 1000)
 
-    return () => clearInterval(timer)
+    return () => {
+      localMounted = false
+      clearInterval(timer)
+    }
   }, [analysisId, isVerifying, error, router])
 
   // Error state
   if (error) {
     return (
       <div className="text-center py-20">
-        <div className="text-6xl mb-6">😕</div>
+        <div className="text-6xl mb-6" aria-hidden="true">😕</div>
         <h1 className="font-heading text-2xl md:text-3xl font-bold text-slate-900 mb-4">
           Etwas ist schiefgelaufen
         </h1>
@@ -97,7 +109,7 @@ function SuccessContent() {
   if (isVerifying) {
     return (
       <div className="text-center py-20">
-        <div className="text-6xl mb-6 animate-pulse">⏳</div>
+        <div className="text-6xl mb-6 animate-pulse" aria-hidden="true">⏳</div>
         <h1 className="font-heading text-2xl md:text-3xl font-bold text-slate-900 mb-4">
           Zahlung wird verifiziert...
         </h1>
@@ -111,9 +123,9 @@ function SuccessContent() {
     <div className="text-center py-20">
       {/* Success Animation */}
       <div className="relative inline-block mb-8">
-        <div className="text-7xl md:text-8xl animate-bounce">🎉</div>
-        <div className="absolute -top-2 -right-2 text-4xl animate-ping">✨</div>
-        <div className="absolute -bottom-2 -left-2 text-4xl animate-ping" style={{ animationDelay: '0.5s' }}>✨</div>
+        <div className="text-7xl md:text-8xl animate-bounce" aria-hidden="true">🎉</div>
+        <div className="absolute -top-2 -right-2 text-4xl animate-ping" aria-hidden="true">✨</div>
+        <div className="absolute -bottom-2 -left-2 text-4xl animate-ping" style={{ animationDelay: '0.5s' }} aria-hidden="true">✨</div>
       </div>
 
       {/* Success Message */}
@@ -125,13 +137,18 @@ function SuccessContent() {
         Deine Zahlung war erfolgreich.
       </p>
 
-      <p className="text-slate-500 mb-8">
+      {/* FIX: aria-live and aria-atomic for screen reader announcement */}
+      <p 
+        className="text-slate-500 mb-8" 
+        aria-live="polite" 
+        aria-atomic="true"
+      >
         Weiterleitung in <span className="font-bold text-primary-500">{countdown}</span> Sekunden...
       </p>
 
       {/* CTA Button */}
       <a
-        href={`/ergebnis/${analysisId}?unlocked=true`}
+        href={`/ergebnis/${encodeURIComponent(analysisId || 'demo')}?unlocked=true`}
         className="inline-flex items-center gap-2 px-8 py-4 bg-primary-500 text-white rounded-xl font-bold text-lg hover:bg-primary-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Ergebnis ansehen
@@ -168,7 +185,7 @@ export default function SuccessPage() {
         <div className="max-w-xl mx-auto px-4">
           <Suspense fallback={
             <div className="text-center py-20">
-              <div className="text-6xl mb-6 animate-pulse">⏳</div>
+              <div className="text-6xl mb-6 animate-pulse" aria-hidden="true">⏳</div>
               <p className="text-slate-600">Laden...</p>
             </div>
           }>

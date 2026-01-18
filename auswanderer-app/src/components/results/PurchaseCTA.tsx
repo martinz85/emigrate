@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface PurchaseCTAProps {
@@ -8,20 +8,32 @@ interface PurchaseCTAProps {
   price?: string
 }
 
+// Timeout for checkout API call (10 seconds)
+const CHECKOUT_TIMEOUT_MS = 10000
+
 export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const isSubmittingRef = useRef(false) // Prevent double-clicks
 
   const handleCheckout = async () => {
+    // FIX: Early return to prevent double-clicks
+    if (isLoading || isSubmittingRef.current) return
+    isSubmittingRef.current = true
     setIsLoading(true)
     setError(null)
+
+    // FIX: Add timeout to prevent infinite waiting
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), CHECKOUT_TIMEOUT_MS)
 
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ analysisId }),
+        signal: controller.signal,
       })
 
       const data = await response.json()
@@ -38,8 +50,17 @@ export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps
       }
     } catch (err) {
       console.error('Checkout error:', err)
-      setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
+      
+      // Handle timeout specifically
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Zeitüberschreitung - bitte versuche es erneut')
+      } else {
+        setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
+      }
       setIsLoading(false)
+      isSubmittingRef.current = false
+    } finally {
+      clearTimeout(timeout)
     }
   }
 
@@ -66,19 +87,26 @@ export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps
         </div>
       </div>
 
-      {/* Error Message */}
+      {/* Error Message - FIX: Added role="alert" and id for aria-describedby */}
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div 
+          id="checkout-error"
+          role="alert"
+          className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+        >
           {error}
         </div>
       )}
 
       {/* CTA Button - AC: "Jetzt freischalten – 29,99€" in Amber */}
+      {/* FIX: Added aria-live for loading state announcement */}
       <button
         onClick={handleCheckout}
         disabled={isLoading}
         className="inline-block bg-gradient-to-r from-amber-500 to-amber-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         aria-busy={isLoading}
+        aria-live="polite"
+        aria-describedby={error ? 'checkout-error' : undefined}
       >
         {isLoading ? (
           <span className="flex items-center gap-2">
