@@ -1,0 +1,11 @@
+# Robots.txt for Auswanderer-Plattform
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://auswanderer-plattform.de/sitemap.xml
+
+# Disallow admin/api routes
+Disallow: /api/
+Disallow: /dashboard/
+
