@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 interface CountUpScoreProps {
   targetValue: number
@@ -28,46 +28,60 @@ export function CountUpScore({ targetValue, duration = 2500, suffix = '%' }: Cou
     return 'from-orange-500/20 to-red-500/20'
   }
 
+  const animate = useCallback((timestamp: number) => {
+    if (!startTimeRef.current) {
+      startTimeRef.current = timestamp
+    }
+
+    const elapsed = timestamp - startTimeRef.current
+    const progress = Math.min(elapsed / duration, 1)
+
+    // Easing function for smooth animation
+    const easeOutQuart = 1 - Math.pow(1 - progress, 4)
+    const value = Math.round(easeOutQuart * targetValue)
+
+    setCurrentValue(value)
+
+    if (progress < 1) {
+      rafRef.current = requestAnimationFrame(animate)
+    } else {
+      setIsAnimating(false)
+    }
+  }, [duration, targetValue])
+
   useEffect(() => {
-    const animate = (timestamp: number) => {
-      if (!startTimeRef.current) {
-        startTimeRef.current = timestamp
-      }
+    // Start animation
+    rafRef.current = requestAnimationFrame(animate)
 
-      const elapsed = timestamp - startTimeRef.current
-      const progress = Math.min(elapsed / duration, 1)
-
-      // Easing function for smooth animation
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4)
-      const value = Math.round(easeOutQuart * targetValue)
-
-      setCurrentValue(value)
-
-      if (progress < 1) {
+    // Pause animation when tab is not visible
+    const handleVisibilityChange = () => {
+      if (document.hidden && rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+      } else if (!document.hidden && isAnimating) {
         rafRef.current = requestAnimationFrame(animate)
-      } else {
-        setIsAnimating(false)
       }
     }
 
-    rafRef.current = requestAnimationFrame(animate)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current)
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [targetValue, duration])
+  }, [animate, isAnimating])
 
   return (
-    <div className="text-center">
+    <div className="text-center relative">
       <div 
         className={`inline-flex items-center justify-center w-48 h-48 md:w-56 md:h-56 rounded-full bg-gradient-to-br ${getScoreGradient(currentValue)} border-4 border-white shadow-2xl`}
       >
         <div className="text-center">
+          {/* Only announce final value to screen readers */}
           <span 
             className={`text-6xl md:text-7xl font-bold ${getScoreColor(currentValue)} transition-colors duration-500`}
-            aria-live="polite"
+            aria-live={isAnimating ? 'off' : 'polite'}
           >
             {currentValue}
           </span>
@@ -78,11 +92,12 @@ export function CountUpScore({ targetValue, duration = 2500, suffix = '%' }: Cou
         </div>
       </div>
       
-      {/* Pulse animation while counting */}
+      {/* Pulse animation while counting - now properly positioned */}
       {isAnimating && (
-        <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-primary-500" />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-48 h-48 md:w-56 md:h-56 rounded-full animate-ping opacity-20 bg-primary-500" />
+        </div>
       )}
     </div>
   )
 }
-

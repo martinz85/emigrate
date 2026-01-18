@@ -2,18 +2,25 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ResultTeaser } from '@/components/results/ResultTeaser'
 
-// Mock data for development - in production this would come from Supabase
-function getMockAnalysisResult(id: string) {
-  // Demo result for testing
+/**
+ * SECURITY: This function returns TEASER data only
+ * Country names are NOT included - only lengths and percentages
+ * Full data is only sent after payment verification
+ */
+function getTeaserResult(id: string) {
+  // In production: fetch from Supabase, verify payment status
+  // Only return country names if user has paid
+  
+  // Demo teaser result - NO country names exposed
   return {
-    topCountry: 'Portugal',
     matchPercentage: 92,
+    topCountryNameLength: 8, // "Portugal".length - but name not sent!
     rankings: [
-      { rank: 1, country: 'Portugal', percentage: 92 },
-      { rank: 2, country: 'Spanien', percentage: 87 },
-      { rank: 3, country: 'Zypern', percentage: 81 },
-      { rank: 4, country: 'Costa Rica', percentage: 77 },
-      { rank: 5, country: 'Uruguay', percentage: 73 },
+      { rank: 1, percentage: 92 },
+      { rank: 2, percentage: 87 },
+      { rank: 3, percentage: 81 },
+      { rank: 4, percentage: 77 },
+      { rank: 5, percentage: 73 },
     ],
   }
 }
@@ -26,9 +33,8 @@ export const metadata = {
 export default function ResultPage({ params }: { params: { id: string } }) {
   const analysisId = params.id
   
-  // In production, fetch from Supabase based on analysisId
-  // For now, use mock data
-  const result = getMockAnalysisResult(analysisId)
+  // Get teaser data (secure - no country names)
+  const result = getTeaserResult(analysisId)
 
   return (
     <>

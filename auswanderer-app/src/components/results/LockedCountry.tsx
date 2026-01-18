@@ -1,51 +1,31 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-
 interface LockedCountryProps {
-  countryName?: string // Hidden, but used for length
+  /** Only the length of the country name - NOT the actual name for security */
+  nameLength?: number
 }
 
-export function LockedCountry({ countryName = 'Portugal' }: LockedCountryProps) {
-  const [shimmerPosition, setShimmerPosition] = useState(0)
-
-  // Shimmer animation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShimmerPosition((prev) => (prev + 1) % 100)
-    }, 50)
-    return () => clearInterval(interval)
-  }, [])
-
-  // Generate locks based on approximate country name length
-  const lockCount = Math.max(5, Math.min(countryName.length, 12))
+export function LockedCountry({ nameLength = 8 }: LockedCountryProps) {
+  // Generate locks based on name length (without revealing the actual name)
+  const lockCount = Math.max(5, Math.min(nameLength, 12))
   const locks = Array(lockCount).fill('🔒')
 
   return (
     <div className="relative">
-      {/* Blurred background hint */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span 
-          className="text-4xl md:text-5xl font-bold text-slate-200 blur-lg select-none"
-          aria-hidden="true"
-        >
-          {countryName}
-        </span>
-      </div>
-
       {/* Lock overlay */}
       <div className="relative z-10 py-8">
-        {/* Lock icons */}
+        {/* Lock icons with staggered animation */}
         <div 
           className="flex items-center justify-center gap-1 text-3xl md:text-4xl mb-4"
           role="img"
-          aria-label="Land ist versteckt"
+          aria-label="Dein Top-Land ist versteckt"
         >
           {locks.map((lock, i) => (
             <span 
               key={i} 
               className="animate-pulse"
               style={{ animationDelay: `${i * 100}ms` }}
+              aria-hidden="true"
             >
               {lock}
             </span>
@@ -57,18 +37,12 @@ export function LockedCountry({ countryName = 'Portugal' }: LockedCountryProps) 
           Dein Top-Land ist versteckt
         </p>
 
-        {/* Shimmer effect */}
+        {/* Shimmer effect - CSS animation instead of JS state */}
         <div 
           className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl"
           aria-hidden="true"
         >
-          <div 
-            className="absolute inset-y-0 w-32 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-            style={{ 
-              left: `${shimmerPosition}%`,
-              transform: 'translateX(-50%)',
-            }}
-          />
+          <div className="absolute inset-y-0 w-32 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
         </div>
       </div>
 
@@ -77,4 +51,3 @@ export function LockedCountry({ countryName = 'Portugal' }: LockedCountryProps) 
     </div>
   )
 }
-

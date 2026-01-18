@@ -31,10 +31,10 @@ export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps
         </div>
       </div>
 
-      {/* CTA Button */}
+      {/* CTA Button - Amber color for high visibility (AC: "Button ist im Amber-Farbton") */}
       <Link
         href={`/checkout?analysisId=${analysisId}`}
-        className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:from-secondary-600 hover:to-secondary-700 transition-all duration-200 shadow-lg shadow-secondary-500/30 hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:ring-offset-2"
+        className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white px-10 py-5 rounded-xl font-bold text-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-200 shadow-lg shadow-amber-500/30 hover:shadow-xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
       >
         <span>Jetzt freischalten</span>
         <span className="bg-white/20 px-3 py-1 rounded-lg text-lg">{price}</span>
