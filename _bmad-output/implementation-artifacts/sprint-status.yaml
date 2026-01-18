@@ -82,11 +82,11 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: PDF Generation & Reveal
-  epic-5: backlog
-  5-1-land-reveal-animation: backlog
-  5-2-pdf-template: backlog
-  5-3-pdf-generator-api: backlog
-  5-4-pdf-download-button: backlog
+  epic-5: in-progress
+  5-1-land-reveal-animation: ready-for-dev
+  5-2-pdf-template: ready-for-dev
+  5-3-pdf-generator-api: ready-for-dev
+  5-4-pdf-download-button: ready-for-dev
   epic-5-retrospective: optional
 
   # Epic 6: User Authentication
