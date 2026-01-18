@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/Header'
-import { AnalysisChat } from '@/components/analysis/AnalysisChat'
+import { AnalysisFlow } from '@/components/analysis/AnalysisFlow'
 
 export const metadata = {
   title: 'AI-Analyse starten | Auswanderer-Plattform',
@@ -11,7 +11,7 @@ export default function AnalysePage() {
     <>
       <Header />
       <main id="main-content" className="min-h-screen bg-slate-50 pt-20">
-        <AnalysisChat />
+        <AnalysisFlow />
       </main>
     </>
   )

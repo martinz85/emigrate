@@ -54,15 +54,15 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: AI Analysis Flow
-  epic-2: backlog
-  2-1-analysis-page-setup: backlog
-  2-2-pre-analysis-questions: backlog
-  2-3-rating-ui-component: backlog
-  2-4-question-flow-state: backlog
-  2-5-progress-header: backlog
-  2-6-info-modal: backlog
-  2-7-loading-animation: backlog
-  2-8-claude-ai-integration: backlog
+  epic-2: in-progress
+  2-1-analysis-page-setup: done
+  2-2-pre-analysis-questions: done
+  2-3-rating-ui-component: done
+  2-4-question-flow-state: done
+  2-5-progress-header: done
+  2-6-info-modal: done
+  2-7-loading-animation: done
+  2-8-claude-ai-integration: done
   epic-2-retrospective: optional
 
   # Epic 3: Results & Freemium Preview

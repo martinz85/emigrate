@@ -1,81 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { analyzeEmigration, type AnalysisRequest } from '@/lib/claude/analyze'
+import { randomUUID } from 'crypto'
 
-// This will be replaced with actual Claude API integration
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { criteriaRatings, userProfile } = body
+    const { preAnalysis, ratings } = body
 
-    // TODO: Integrate Claude API for analysis
-    // For now, return mock data
-    
-    const mockAnalysis = {
-      success: true,
-      rankings: [
-        {
-          rank: 1,
-          country: 'Portugal',
-          countryCode: 'PT',
-          score: 48,
-          maxScore: 52,
-          percentage: 92,
-          strengths: [
-            'Niedrige Lebenshaltungskosten',
-            'Gutes Klima (3.000+ Sonnenstunden)',
-            'EU-Mitglied',
-            'Starke Expat-Community',
-          ],
-          considerations: [
-            'Portugiesisch lernen empfohlen',
-            'Immobilienpreise in Lissabon steigen',
-          ],
-        },
-        {
-          rank: 2,
-          country: 'Spanien',
-          countryCode: 'ES',
-          score: 45,
-          maxScore: 52,
-          percentage: 87,
-          strengths: [
-            'Exzellentes Klima',
-            'EU-Freizügigkeit',
-            'Große deutsche Community',
-          ],
-          considerations: [
-            'Arbeitsmarkt in manchen Regionen schwierig',
-          ],
-        },
-        {
-          rank: 3,
-          country: 'Zypern',
-          countryCode: 'CY',
-          score: 42,
-          maxScore: 52,
-          percentage: 81,
-          strengths: [
-            'Englisch weit verbreitet',
-            'Günstige Steuern',
-            'EU-Mitglied',
-          ],
-          considerations: [
-            'Geteilte Insel',
-            'Wasserknappheit',
-          ],
-        },
-      ],
-      recommendation: {
-        topCountry: 'Portugal',
-        summary: 'Basierend auf deinen Prioritäten ist Portugal die beste Wahl für dich.',
-        nextSteps: [
-          'Visa D7 (Passive Income) prüfen',
-          'Regionen vergleichen: Lissabon vs. Algarve vs. Porto',
-          'Steuerliche Vorteile (NHR) recherchieren',
-        ],
+    // Transform the request to match the Claude API format
+    const analysisRequest: AnalysisRequest = {
+      criteriaRatings: ratings,
+      userProfile: {
+        // Map preAnalysis to userProfile fields
+        // countriesOfInterest will be passed in the prompt
       },
     }
 
-    return NextResponse.json(mockAnalysis)
+    // Call Claude AI for analysis
+    const analysisResult = await analyzeEmigration(analysisRequest)
+
+    // Generate a unique ID for this analysis
+    // In production, this would be stored in Supabase
+    const analysisId = randomUUID()
+
+    // TODO: Store in Supabase
+    // const { data, error } = await supabase
+    //   .from('analyses')
+    //   .insert({
+    //     id: analysisId,
+    //     preAnalysis,
+    //     ratings,
+    //     results: analysisResult,
+    //     created_at: new Date().toISOString(),
+    //   })
+
+    return NextResponse.json({
+      success: true,
+      analysisId,
+      ...analysisResult,
+    })
   } catch (error) {
     console.error('Analysis error:', error)
     return NextResponse.json(
@@ -84,4 +47,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
