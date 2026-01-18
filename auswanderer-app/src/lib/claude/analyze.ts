@@ -2,7 +2,11 @@
 
 export interface AnalysisRequest {
   criteriaRatings: Record<string, number>
-  userProfile: {
+  preAnalysis?: {
+    countriesOfInterest: string[]
+    specialWishes: string
+  }
+  userProfile?: {
     budget?: string
     profession?: string
     familyStatus?: string
@@ -44,8 +48,12 @@ export interface AnalysisResult {
   }
 }
 
+// 28 Kriterien × max 2 Punkte × max 5 Gewichtung = 280 max Score
+const MAX_SCORE = 280
+const CRITERIA_COUNT = 28
+
 const SYSTEM_PROMPT = `Du bist ein erfahrener Auswanderungs-Berater mit 20 Jahren Erfahrung. 
-Du analysierst die Antworten eines Nutzers auf 26 Kriterien und erstellst ein personalisiertes Länder-Ranking.
+Du analysierst die Antworten eines Nutzers auf ${CRITERIA_COUNT} Kriterien und erstellst ein personalisiertes Länder-Ranking.
 
 Für jedes Kriterium gibt der Nutzer eine Gewichtung von 1-5 an (1=egal, 5=sehr wichtig).
 
@@ -55,6 +63,7 @@ Du bewertest jedes Land für jedes Kriterium mit:
 - -- (0 Punkte) = Schlecht
 
 Der Gesamtscore eines Landes = Summe(Kriterium_Score × Nutzer_Gewichtung)
+Maximaler Score = ${MAX_SCORE} (${CRITERIA_COUNT} Kriterien × 2 Punkte × 5 Gewichtung)
 
 Antworte immer auf Deutsch und in einem freundlichen, hilfreichen Ton.`
 
@@ -103,20 +112,29 @@ export async function analyzeEmigration(
 }
 
 function buildAnalysisPrompt(request: AnalysisRequest): string {
-  const { criteriaRatings, userProfile } = request
+  const { criteriaRatings, preAnalysis, userProfile } = request
   
   let prompt = `Analysiere folgendes Nutzerprofil für die Auswanderung:
 
 ## Nutzer-Profil:
 `
 
-  if (userProfile.budget) prompt += `- Budget: ${userProfile.budget}\n`
-  if (userProfile.profession) prompt += `- Beruf: ${userProfile.profession}\n`
-  if (userProfile.familyStatus) prompt += `- Familie: ${userProfile.familyStatus}\n`
-  if (userProfile.citizenship) prompt += `- Staatsbürgerschaft: ${userProfile.citizenship}\n`
-  if (userProfile.languages?.length) prompt += `- Sprachen: ${userProfile.languages.join(', ')}\n`
-  if (userProfile.climatePref) prompt += `- Klima-Präferenz: ${userProfile.climatePref}\n`
-  if (userProfile.naturePref) prompt += `- Natur-Präferenz: ${userProfile.naturePref}\n`
+  // Pre-Analysis Daten
+  if (preAnalysis?.countriesOfInterest?.length) {
+    prompt += `- Interessante Länder: ${preAnalysis.countriesOfInterest.join(', ')}\n`
+  }
+  if (preAnalysis?.specialWishes) {
+    prompt += `- Besondere Wünsche: ${preAnalysis.specialWishes}\n`
+  }
+
+  // User Profile Daten (optional)
+  if (userProfile?.budget) prompt += `- Budget: ${userProfile.budget}\n`
+  if (userProfile?.profession) prompt += `- Beruf: ${userProfile.profession}\n`
+  if (userProfile?.familyStatus) prompt += `- Familie: ${userProfile.familyStatus}\n`
+  if (userProfile?.citizenship) prompt += `- Staatsbürgerschaft: ${userProfile.citizenship}\n`
+  if (userProfile?.languages?.length) prompt += `- Sprachen: ${userProfile.languages.join(', ')}\n`
+  if (userProfile?.climatePref) prompt += `- Klima-Präferenz: ${userProfile.climatePref}\n`
+  if (userProfile?.naturePref) prompt += `- Natur-Präferenz: ${userProfile.naturePref}\n`
 
   prompt += `\n## Kriterien-Gewichtungen (1=egal, 5=sehr wichtig):\n`
   
@@ -126,6 +144,7 @@ function buildAnalysisPrompt(request: AnalysisRequest): string {
 
   prompt += `\n## Aufgabe:
 Erstelle ein Ranking der Top 5 Auswanderungsländer für diesen Nutzer.
+${preAnalysis?.countriesOfInterest?.length ? `Berücksichtige besonders die genannten Länder: ${preAnalysis.countriesOfInterest.join(', ')}.` : ''}
 
 Antworte im JSON-Format:
 {
@@ -165,8 +184,8 @@ function parseClaudeResponse(text: string): AnalysisResult {
         rank: index + 1,
         country: r.country,
         countryCode: r.countryCode,
-        score: Math.round((r.percentage / 100) * 52),
-        maxScore: 52,
+        score: Math.round((r.percentage / 100) * MAX_SCORE),
+        maxScore: MAX_SCORE,
         percentage: r.percentage,
         criteriaScores: {},
         strengths: r.strengths || [],
@@ -188,8 +207,8 @@ function getMockAnalysis(request: AnalysisRequest): AnalysisResult {
         rank: 1,
         country: 'Portugal',
         countryCode: 'PT',
-        score: 48,
-        maxScore: 52,
+        score: Math.round((92 / 100) * MAX_SCORE),
+        maxScore: MAX_SCORE,
         percentage: 92,
         criteriaScores: {},
         strengths: [
@@ -208,8 +227,8 @@ function getMockAnalysis(request: AnalysisRequest): AnalysisResult {
         rank: 2,
         country: 'Spanien',
         countryCode: 'ES',
-        score: 45,
-        maxScore: 52,
+        score: Math.round((87 / 100) * MAX_SCORE),
+        maxScore: MAX_SCORE,
         percentage: 87,
         criteriaScores: {},
         strengths: [
@@ -227,8 +246,8 @@ function getMockAnalysis(request: AnalysisRequest): AnalysisResult {
         rank: 3,
         country: 'Zypern',
         countryCode: 'CY',
-        score: 42,
-        maxScore: 52,
+        score: Math.round((81 / 100) * MAX_SCORE),
+        maxScore: MAX_SCORE,
         percentage: 81,
         criteriaScores: {},
         strengths: [
@@ -246,8 +265,8 @@ function getMockAnalysis(request: AnalysisRequest): AnalysisResult {
         rank: 4,
         country: 'Costa Rica',
         countryCode: 'CR',
-        score: 40,
-        maxScore: 52,
+        score: Math.round((77 / 100) * MAX_SCORE),
+        maxScore: MAX_SCORE,
         percentage: 77,
         criteriaScores: {},
         strengths: [
@@ -265,8 +284,8 @@ function getMockAnalysis(request: AnalysisRequest): AnalysisResult {
         rank: 5,
         country: 'Uruguay',
         countryCode: 'UY',
-        score: 38,
-        maxScore: 52,
+        score: Math.round((73 / 100) * MAX_SCORE),
+        maxScore: MAX_SCORE,
         percentage: 73,
         criteriaScores: {},
         strengths: [

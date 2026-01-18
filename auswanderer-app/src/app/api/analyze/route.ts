@@ -10,9 +10,9 @@ export async function POST(request: NextRequest) {
     // Transform the request to match the Claude API format
     const analysisRequest: AnalysisRequest = {
       criteriaRatings: ratings,
-      userProfile: {
-        // Map preAnalysis to userProfile fields
-        // countriesOfInterest will be passed in the prompt
+      preAnalysis: preAnalysis || {
+        countriesOfInterest: [],
+        specialWishes: '',
       },
     }
 

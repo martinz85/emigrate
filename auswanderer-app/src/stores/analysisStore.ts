@@ -108,7 +108,10 @@ export const useAnalysisStore = create<AnalysisState>()(
         preAnalysis: state.preAnalysis,
         ratings: state.ratings,
         currentCriterionIndex: state.currentCriterionIndex,
-        currentStep: state.currentStep,
+        // Don't persist 'loading' or 'complete' steps - on reload, go back to last answerable step
+        currentStep: state.currentStep === 'loading' || state.currentStep === 'complete'
+          ? 'criteria'
+          : state.currentStep,
       }),
     }
   )

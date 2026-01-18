@@ -11,7 +11,8 @@ interface ProgressHeaderProps {
 }
 
 export function ProgressHeader({ current, total, category, onBack }: ProgressHeaderProps) {
-  const percentage = ((current) / total) * 100
+  // Use (current + 1) so that question 1 shows some progress, not 0%
+  const percentage = ((current + 1) / total) * 100
   const categoryLabel = category ? CATEGORY_LABELS[category] : ''
   const categoryIcon = category ? CATEGORY_ICONS[category] : ''
 

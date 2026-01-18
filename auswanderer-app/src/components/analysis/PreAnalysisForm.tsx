@@ -35,6 +35,11 @@ export function PreAnalysisForm({ onComplete }: PreAnalysisFormProps) {
   }
 
   const handleSkip = () => {
+    // Clear any previously saved pre-analysis data when skipping
+    setPreAnalysis({
+      countriesOfInterest: [],
+      specialWishes: '',
+    })
     onComplete()
   }
 
@@ -51,8 +56,9 @@ export function PreAnalysisForm({ onComplete }: PreAnalysisFormProps) {
           {countriesQuestion.options?.map((country) => (
             <button
               key={country}
+              type="button"
               onClick={() => toggleCountry(country)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                 selectedCountries.includes(country)
                   ? 'bg-primary-500 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
