@@ -102,6 +102,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // FIX: Explicit null check for session.url
+    if (!session.url) {
+      console.error('Stripe session created but URL is null:', session.id)
+      return NextResponse.json(
+        { error: 'Checkout-URL konnte nicht erstellt werden' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({
       url: session.url,
       sessionId: session.id,

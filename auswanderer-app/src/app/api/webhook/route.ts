@@ -99,14 +99,20 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Expected payment configuration
+const EXPECTED_AMOUNT = 2999 // 29,99€ in cents
+const EXPECTED_CURRENCY = 'eur'
+
 /**
  * Handle successful checkout completion
+ * Validates payment details before marking as paid
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const analysisId = session.metadata?.analysisId
   const customerEmail = session.customer_details?.email
   const amountTotal = session.amount_total
   const paymentStatus = session.payment_status
+  const currency = session.currency
 
   // FIX: Mask PII in production logs (DSGVO compliance)
   const maskedEmail = customerEmail 
@@ -119,13 +125,31 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log(`Session ID: ${session.id}`)
   console.log(`Analysis ID: ${analysisId}`)
   console.log(`Customer Email: ${maskedEmail}`)
-  console.log(`Amount: ${amountTotal ? amountTotal / 100 : 0} EUR`)
+  console.log(`Amount: ${amountTotal ? amountTotal / 100 : 0} ${currency?.toUpperCase() || 'EUR'}`)
   console.log(`Payment Status: ${paymentStatus}`)
   console.log('==================================')
 
+  // FIX: Validate payment status
+  if (paymentStatus !== 'paid') {
+    console.error(`Payment not completed. Status: ${paymentStatus}`)
+    throw new Error(`Invalid payment status: ${paymentStatus}`)
+  }
+
+  // FIX: Validate amount (prevent underpayment attacks)
+  if (amountTotal !== EXPECTED_AMOUNT) {
+    console.error(`Invalid amount: ${amountTotal}, expected: ${EXPECTED_AMOUNT}`)
+    throw new Error(`Invalid payment amount: ${amountTotal}`)
+  }
+
+  // FIX: Validate currency
+  if (currency?.toLowerCase() !== EXPECTED_CURRENCY) {
+    console.error(`Invalid currency: ${currency}, expected: ${EXPECTED_CURRENCY}`)
+    throw new Error(`Invalid currency: ${currency}`)
+  }
+
   if (!analysisId) {
     console.error('No analysisId in session metadata')
-    return
+    throw new Error('Missing analysisId in metadata')
   }
 
   // TODO: Save purchase to Supabase when database is set up (Epic 6)

@@ -42,11 +42,19 @@ export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps
         throw new Error(data.error || 'Checkout fehlgeschlagen')
       }
 
-      if (data.url) {
-        // Redirect to Stripe Checkout (or mock URL in dev)
-        router.push(data.url)
-      } else {
+      if (!data.url) {
         throw new Error('Keine Checkout-URL erhalten')
+      }
+
+      // FIX: Use window.location for external Stripe URLs
+      // router.push is for internal navigation only
+      // Stripe checkout URLs are external (https://checkout.stripe.com/...)
+      if (data.url.startsWith('http://') || data.url.startsWith('https://')) {
+        // External URL (Stripe production)
+        window.location.href = data.url
+      } else {
+        // Internal URL (mock mode in development)
+        router.push(data.url)
       }
     } catch (err) {
       console.error('Checkout error:', err)
