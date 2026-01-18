@@ -9,7 +9,7 @@ import { FAQSection } from '@/components/landing/FAQSection'
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
+    <main id="main-content" className="min-h-screen">
       <Header />
       <HeroSection />
       <HowItWorks />

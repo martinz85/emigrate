@@ -12,3 +12,5 @@ export default function ResultPage({ params }: { params: { id: string } }) {
   )
 }
 
+
+
