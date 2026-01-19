@@ -1,19 +1,146 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { CRITERIA } from '@/lib/criteria'
 
-// Force Node.js runtime (required for PDF generation)
+// Force Node.js runtime
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-/**
- * Note: @react-pdf/renderer has compatibility issues with Next.js App Router.
- * For MVP, we use a text-based placeholder. For production, consider:
- * 1. Using a separate Node.js worker for PDF generation
- * 2. Using an external PDF generation service (e.g., Puppeteer on a serverless function)
- * 3. Using a client-side PDF generation library like jspdf
- */
+// UUID regex for validation
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-interface AnalysisReportData {
+/**
+ * PDF/Report Download API
+ * 
+ * Security: Verifies payment status in Supabase before generating report.
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const analysisId = params.id
+
+  // Validate ID format
+  if (!analysisId || typeof analysisId !== 'string') {
+    return NextResponse.json(
+      { error: 'Ungültige Analyse-ID' },
+      { status: 400 }
+    )
+  }
+
+  // Handle demo mode
+  if (analysisId === 'demo') {
+    const demoData = getDemoAnalysisData()
+    const textContent = generateTextReport(demoData)
+    return createReportResponse(textContent)
+  }
+
+  // Validate UUID format
+  if (!UUID_REGEX.test(analysisId)) {
+    return NextResponse.json(
+      { error: 'Analyse nicht gefunden' },
+      { status: 404 }
+    )
+  }
+
+  try {
+    const supabase = await createClient()
+    const cookieStore = await cookies()
+    const sessionId = cookieStore.get('session_id')?.value
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Fetch analysis from Supabase
+    const { data: analysis, error } = await supabase
+      .from('analyses')
+      .select('*')
+      .eq('id', analysisId)
+      .single()
+
+    if (error || !analysis) {
+      console.error('Analysis not found:', error)
+      return NextResponse.json(
+        { error: 'Analyse nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
+    // Security: Check ownership
+    const isOwner = 
+      (user && analysis.user_id === user.id) ||
+      (!user && analysis.session_id === sessionId) ||
+      (analysis.user_id === null && analysis.session_id === null)
+
+    if (!isOwner) {
+      return NextResponse.json(
+        { error: 'Zugriff verweigert' },
+        { status: 403 }
+      )
+    }
+
+    // Security: Check payment status
+    if (!analysis.paid) {
+      return NextResponse.json(
+        { error: 'Analyse nicht freigeschaltet. Bitte zuerst bezahlen.' },
+        { status: 403 }
+      )
+    }
+
+    // Get result data
+    const result = analysis.result as AnalysisResult | null
+    if (!result) {
+      return NextResponse.json(
+        { error: 'Analyse-Ergebnis nicht gefunden' },
+        { status: 404 }
+      )
+    }
+
+    // Generate report
+    console.log(`Generating report for analysis: ${analysisId}`)
+    const startTime = Date.now()
+
+    const reportData = {
+      topCountry: result.topCountry,
+      matchPercentage: result.matchPercentage,
+      createdAt: analysis.created_at,
+      criteriaRatings: extractCriteriaRatings(analysis.ratings),
+      rankings: result.rankings,
+    }
+
+    const textContent = generateTextReport(reportData)
+    const duration = Date.now() - startTime
+    console.log(`Report generated in ${duration}ms`)
+
+    return createReportResponse(textContent)
+  } catch (error) {
+    console.error('Report generation error:', error)
+    
+    return NextResponse.json(
+      { error: 'Report konnte nicht erstellt werden. Bitte versuche es später erneut.' },
+      { status: 500 }
+    )
+  }
+}
+
+// ============================================
+// TYPES
+// ============================================
+
+interface AnalysisResult {
+  topCountry: string
+  matchPercentage: number
+  rankings: Array<{
+    rank: number
+    country: string
+    percentage: number
+    strengths?: string[]
+    considerations?: string[]
+  }>
+}
+
+interface ReportData {
   topCountry: string
   matchPercentage: number
   createdAt: string
@@ -21,88 +148,91 @@ interface AnalysisReportData {
   rankings: Array<{ rank: number; country: string; percentage: number; strengths?: string[]; considerations?: string[] }>
 }
 
-// Allowed IDs for MVP demo mode
-// In production: All IDs will be validated against Supabase
-const ALLOWED_DEMO_IDS = ['demo']
+// ============================================
+// HELPERS
+// ============================================
 
-// UUID regex for production IDs
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function createReportResponse(textContent: string): NextResponse {
+  const date = new Date().toISOString().split('T')[0]
+  const filename = `auswanderer-analyse-${date}.txt`
 
-/**
- * Validate analysis ID
- * For MVP: Only 'demo' and valid UUIDs are allowed
- */
-function isValidAnalysisId(id: string): boolean {
-  return ALLOWED_DEMO_IDS.includes(id) || UUID_REGEX.test(id)
+  return new NextResponse(textContent, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+    },
+  })
 }
 
-/**
- * Mock analysis data for development
- * In production: Fetch from Supabase and verify payment status
- * 
- * ⚠️ SECURITY WARNING: This function returns mock data for ANY valid ID.
- * In production, this MUST be replaced with actual Supabase queries
- * that verify the user owns the analysis AND has paid for it.
- */
-function getMockAnalysisData(id: string): AnalysisReportData {
-  // Fixed demo data for consistent testing (no random values)
-  const criteriaRatings = CRITERIA.map((criterion, index) => ({
+function extractCriteriaRatings(ratings: unknown): Array<{ id: string; name: string; category: string; rating: number }> {
+  const ratingsObj = ratings as Record<string, number> | null
+  if (!ratingsObj) return []
+
+  return CRITERIA.map(criterion => ({
     id: criterion.id,
     name: criterion.name,
     category: criterion.category,
-    // Fixed ratings based on index for deterministic output
-    rating: ((index % 3) + 3) as 3 | 4 | 5,
+    rating: ratingsObj[criterion.id] || 3,
   }))
+}
 
+function getDemoAnalysisData(): ReportData {
   return {
     topCountry: 'Portugal',
     matchPercentage: 92,
     createdAt: new Date().toISOString(),
-    criteriaRatings,
-      rankings: [
-        { 
-          rank: 1, 
-          country: 'Portugal', 
-          percentage: 92,
-          strengths: ['Niedrige Lebenshaltungskosten', 'Angenehmes Klima', 'Gute Infrastruktur'],
-          considerations: ['Sprachbarriere', 'Bürokratie'],
-        },
-        { 
-          rank: 2, 
-          country: 'Spanien', 
-          percentage: 87,
-          strengths: ['Hohe Lebensqualität', 'Kultur & Essen', 'Gesundheitssystem'],
-          considerations: ['Höhere Kosten in Großstädten'],
-        },
-        { 
-          rank: 3, 
-          country: 'Zypern', 
-          percentage: 81,
-          strengths: ['Steuervorteile', 'Englisch verbreitet', 'EU-Mitglied'],
-          considerations: ['Kleine Insel', 'Sommer sehr heiß'],
-        },
-        { 
-          rank: 4, 
-          country: 'Costa Rica', 
-          percentage: 77,
-          strengths: ['Natur & Biodiversität', 'Pura Vida Lifestyle'],
-          considerations: ['Entfernung zu Europa', 'Visabestimmungen'],
-        },
-        { 
-          rank: 5, 
-          country: 'Uruguay', 
-          percentage: 73,
-          strengths: ['Stabilität', 'Demokratie', 'Sicherheit'],
-          considerations: ['Kleine Wirtschaft', 'Isolierte Lage'],
-        },
-      ],
-    }
+    criteriaRatings: CRITERIA.map((criterion, index) => ({
+      id: criterion.id,
+      name: criterion.name,
+      category: criterion.category,
+      rating: ((index % 3) + 3) as 3 | 4 | 5,
+    })),
+    rankings: [
+      { 
+        rank: 1, 
+        country: 'Portugal', 
+        percentage: 92,
+        strengths: ['Niedrige Lebenshaltungskosten', 'Angenehmes Klima', 'Gute Infrastruktur'],
+        considerations: ['Sprachbarriere', 'Bürokratie'],
+      },
+      { 
+        rank: 2, 
+        country: 'Spanien', 
+        percentage: 87,
+        strengths: ['Hohe Lebensqualität', 'Kultur & Essen', 'Gesundheitssystem'],
+        considerations: ['Höhere Kosten in Großstädten'],
+      },
+      { 
+        rank: 3, 
+        country: 'Zypern', 
+        percentage: 81,
+        strengths: ['Steuervorteile', 'Englisch verbreitet', 'EU-Mitglied'],
+        considerations: ['Kleine Insel', 'Sommer sehr heiß'],
+      },
+      { 
+        rank: 4, 
+        country: 'Costa Rica', 
+        percentage: 77,
+        strengths: ['Natur & Biodiversität', 'Pura Vida Lifestyle'],
+        considerations: ['Entfernung zu Europa', 'Visabestimmungen'],
+      },
+      { 
+        rank: 5, 
+        country: 'Uruguay', 
+        percentage: 73,
+        strengths: ['Stabilität', 'Demokratie', 'Sicherheit'],
+        considerations: ['Kleine Wirtschaft', 'Isolierte Lage'],
+      },
+    ],
+  }
 }
 
-/**
- * Generate a text-based report (MVP workaround for PDF)
- */
-function generateTextReport(data: AnalysisReportData): string {
+// ============================================
+// REPORT GENERATION
+// ============================================
+
+function generateTextReport(data: ReportData): string {
   const lines: string[] = []
   const divider = '═'.repeat(60)
   const thinDivider = '─'.repeat(60)
@@ -110,58 +240,51 @@ function generateTextReport(data: AnalysisReportData): string {
   // Header
   lines.push(divider)
   lines.push('')
-  lines.push('        AUSWANDERUNGS-ANALYSE')
-  lines.push('        Dein persönliches Länder-Ranking')
+  lines.push('       AUSWANDERUNGS-ANALYSE')
+  lines.push('       Dein persönliches Länder-Ranking')
   lines.push('')
   lines.push(divider)
   lines.push('')
   
-  // Top Country
-  lines.push('DEIN TOP-MATCH:')
-  lines.push('')
-  lines.push(`   🏆 ${data.topCountry}`)
-  lines.push(`   ${data.matchPercentage}% Übereinstimmung`)
+  // Top Result
+  lines.push(`🏆 DEIN TOP-MATCH: ${data.topCountry}`)
+  lines.push(`   Übereinstimmung: ${data.matchPercentage}%`)
   lines.push('')
   lines.push(thinDivider)
   lines.push('')
   
-  // Rankings
-  lines.push('VOLLSTÄNDIGES RANKING:')
+  // Full Ranking
+  lines.push('📊 DEIN VOLLSTÄNDIGES RANKING')
   lines.push('')
   
   for (const ranking of data.rankings) {
     const medal = ranking.rank === 1 ? '🥇' : ranking.rank === 2 ? '🥈' : ranking.rank === 3 ? '🥉' : '  '
-    lines.push(`${medal} Platz ${ranking.rank}: ${ranking.country} - ${ranking.percentage}%`)
+    lines.push(`${medal} ${ranking.rank}. ${ranking.country} - ${ranking.percentage}%`)
     
     if (ranking.strengths && ranking.strengths.length > 0) {
       lines.push(`   ✅ Stärken: ${ranking.strengths.join(', ')}`)
     }
-    
     if (ranking.considerations && ranking.considerations.length > 0) {
       lines.push(`   ⚠️ Beachte: ${ranking.considerations.join(', ')}`)
     }
-    
     lines.push('')
   }
   
   lines.push(thinDivider)
   lines.push('')
   
-  // Criteria Summary (grouped by category)
-  lines.push('DEINE KRITERIEN-BEWERTUNG:')
+  // Criteria Summary
+  lines.push('📋 DEINE KRITERIEN-BEWERTUNGEN')
   lines.push('')
   
-  const byCategory = data.criteriaRatings.reduce((acc, c) => {
-    if (!acc[c.category]) acc[c.category] = []
-    acc[c.category].push(c)
-    return acc
-  }, {} as Record<string, typeof data.criteriaRatings>)
-  
-  for (const [category, criteria] of Object.entries(byCategory)) {
-    lines.push(`📂 ${category}:`)
-    for (const c of criteria) {
-      const stars = '★'.repeat(c.rating) + '☆'.repeat(5 - c.rating)
-      lines.push(`   ${c.name}: ${stars} (${c.rating}/5)`)
+  // Group by category
+  const categories = [...new Set(data.criteriaRatings.map(c => c.category))]
+  for (const category of categories) {
+    lines.push(`▸ ${category}`)
+    const categoryRatings = data.criteriaRatings.filter(c => c.category === category)
+    for (const rating of categoryRatings) {
+      const stars = '★'.repeat(rating.rating) + '☆'.repeat(5 - rating.rating)
+      lines.push(`  ${rating.name}: ${stars} (${rating.rating}/5)`)
     }
     lines.push('')
   }
@@ -178,111 +301,4 @@ function generateTextReport(data: AnalysisReportData): string {
   lines.push(divider)
   
   return lines.join('\n')
-}
-
-/**
- * Check if analysis is paid
- * In production: Query Supabase for payment status
- * 
- * ⚠️ SECURITY WARNING (MVP):
- * This function currently returns TRUE for all valid IDs.
- * This is ONLY acceptable for internal testing/demo purposes.
- * 
- * Before deploying to production, this MUST be replaced with:
- * 1. Supabase query to verify payment status
- * 2. User authentication to verify ownership
- * 
- * See Epic 6 for implementation.
- */
-async function isAnalysisPaid(id: string): Promise<boolean> {
-  // For demo ID: Always allow (for internal testing)
-  if (id === 'demo') return true
-  
-  // TODO: Implement Supabase check in Epic 6
-  // const { data } = await supabase
-  //   .from('analyses')
-  //   .select('paid, user_id')
-  //   .eq('id', id)
-  //   .single()
-  // 
-  // if (!data) return false
-  // 
-  // // Verify ownership
-  // const session = await getServerSession()
-  // if (data.user_id !== session?.user?.id) return false
-  // 
-  // return data.paid === true
-  
-  // ⚠️ MVP ONLY: Allow all valid UUIDs for development
-  // Remove this line in production!
-  return true
-}
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const analysisId = params.id
-
-  // Validate ID format (basic check)
-  if (!analysisId || typeof analysisId !== 'string') {
-    return NextResponse.json(
-      { error: 'Ungültige Analyse-ID' },
-      { status: 400 }
-    )
-  }
-
-  // Validate ID against allowlist/format
-  if (!isValidAnalysisId(analysisId)) {
-    return NextResponse.json(
-      { error: 'Analyse nicht gefunden' },
-      { status: 404 }
-    )
-  }
-
-  try {
-    // Check payment status
-    const isPaid = await isAnalysisPaid(analysisId)
-    
-    if (!isPaid) {
-      return NextResponse.json(
-        { error: 'Analyse nicht freigeschaltet. Bitte zuerst bezahlen.' },
-        { status: 403 }
-      )
-    }
-
-    // Get analysis data
-    const analysisData = getMockAnalysisData(analysisId)
-
-    // Generate PDF content
-    console.log(`Generating PDF for analysis: ${analysisId}`)
-    const startTime = Date.now()
-
-    // MVP: Generate a text-based report instead of PDF due to @react-pdf/renderer compatibility issues
-    // TODO: Implement proper PDF generation in production using a worker or external service
-    const textContent = generateTextReport(analysisData)
-
-    const duration = Date.now() - startTime
-    console.log(`Report generated in ${duration}ms`)
-
-    // Format date for filename
-    const date = new Date().toISOString().split('T')[0]
-    const filename = `auswanderer-analyse-${date}.txt`
-
-    // Return as text file download (MVP workaround)
-    return new NextResponse(textContent, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-      },
-    })
-  } catch (error) {
-    console.error('PDF generation error:', error)
-    
-    return NextResponse.json(
-      { error: 'PDF konnte nicht erstellt werden. Bitte versuche es später erneut.' },
-      { status: 500 }
-    )
-  }
 }

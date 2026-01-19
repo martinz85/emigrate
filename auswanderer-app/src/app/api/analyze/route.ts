@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeEmigration, type AnalysisRequest } from '@/lib/claude/analyze'
+import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { randomUUID } from 'crypto'
+
+// Cookie name for anonymous session tracking
+const SESSION_COOKIE_NAME = 'session_id'
+const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { preAnalysis, ratings } = body
+
+    // Validate ratings
+    if (!ratings || typeof ratings !== 'object' || Object.keys(ratings).length === 0) {
+      return NextResponse.json(
+        { error: 'Ungültige Bewertungsdaten' },
+        { status: 400 }
+      )
+    }
 
     // Transform the request to match the Claude API format
     const analysisRequest: AnalysisRequest = {
@@ -19,30 +33,71 @@ export async function POST(request: NextRequest) {
     // Call Claude AI for analysis
     const analysisResult = await analyzeEmigration(analysisRequest)
 
-    // Generate a unique ID for this analysis
-    // In production, this would be stored in Supabase
+    // Get Supabase client and current user
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Get or create session ID for anonymous users
+    const cookieStore = await cookies()
+    let sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value
+
+    if (!user && !sessionId) {
+      sessionId = randomUUID()
+    }
+
+    // Prepare analysis data for storage
     const analysisId = randomUUID()
+    const analysisData = {
+      id: analysisId,
+      user_id: user?.id || null,
+      session_id: user ? null : sessionId,
+      ratings: ratings,
+      pre_analysis: preAnalysis || null,
+      result: {
+        topCountry: analysisResult.rankings?.[0]?.country || 'Unbekannt',
+        matchPercentage: analysisResult.rankings?.[0]?.percentage || 0,
+        rankings: analysisResult.rankings || [],
+        recommendation: analysisResult.recommendation || '',
+      },
+      paid: false,
+    }
 
-    // TODO: Store in Supabase
-    // const { data, error } = await supabase
-    //   .from('analyses')
-    //   .insert({
-    //     id: analysisId,
-    //     preAnalysis,
-    //     ratings,
-    //     results: analysisResult,
-    //     created_at: new Date().toISOString(),
-    //   })
+    // Store in Supabase
+    const { error: insertError } = await supabase
+      .from('analyses')
+      .insert(analysisData)
 
-    return NextResponse.json({
+    if (insertError) {
+      console.error('Failed to store analysis:', insertError)
+      // Don't fail the request - analysis was successful, just storage failed
+      // In production, you might want to queue this for retry
+    } else {
+      console.log(`Analysis ${analysisId} stored in Supabase`)
+    }
+
+    // Create response
+    const response = NextResponse.json({
       success: true,
       analysisId,
       ...analysisResult,
     })
+
+    // Set session cookie for anonymous users
+    if (!user && sessionId) {
+      response.cookies.set(SESSION_COOKIE_NAME, sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: SESSION_COOKIE_MAX_AGE,
+        path: '/',
+      })
+    }
+
+    return response
   } catch (error) {
     console.error('Analysis error:', error)
     return NextResponse.json(
-      { error: 'Analyse fehlgeschlagen' },
+      { error: 'Analyse fehlgeschlagen. Bitte versuche es erneut.' },
       { status: 500 }
     )
   }

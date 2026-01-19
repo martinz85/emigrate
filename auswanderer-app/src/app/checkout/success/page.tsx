@@ -72,7 +72,8 @@ function SuccessContent() {
         if (prev <= 1) {
           // FIX: Check mount state before navigation
           if (localMounted && isMountedRef.current) {
-            router.push(`/ergebnis/${encodeURIComponent(analysisId)}?unlocked=true`)
+            // Security: No ?unlocked=true - payment is verified server-side from Supabase
+            router.push(`/ergebnis/${encodeURIComponent(analysisId)}`)
           }
           return 0
         }
@@ -147,8 +148,9 @@ function SuccessContent() {
       </p>
 
       {/* CTA Button */}
+      {/* Security: No ?unlocked=true - payment is verified server-side from Supabase */}
       <a
-        href={`/ergebnis/${encodeURIComponent(analysisId || 'demo')}?unlocked=true`}
+        href={`/ergebnis/${encodeURIComponent(analysisId || 'demo')}`}
         className="inline-flex items-center gap-2 px-8 py-4 bg-primary-500 text-white rounded-xl font-bold text-lg hover:bg-primary-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Ergebnis ansehen

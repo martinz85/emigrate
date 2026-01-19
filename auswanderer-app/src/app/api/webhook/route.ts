@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { createAdminClient } from '@/lib/supabase/server'
 
 // Initialize Stripe with secret key
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
         try {
           await handleCheckoutCompleted(session)
         } catch (dbError) {
-          // FIX: Return 500 so Stripe retries the webhook
+          // Return 500 so Stripe retries the webhook
           console.error('Database error processing checkout:', dbError)
           return NextResponse.json(
             { error: 'Database error, please retry' },
@@ -105,7 +106,7 @@ const EXPECTED_CURRENCY = 'eur'
 
 /**
  * Handle successful checkout completion
- * Validates payment details before marking as paid
+ * Validates payment details and updates Supabase
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const analysisId = session.metadata?.analysisId
@@ -114,7 +115,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const paymentStatus = session.payment_status
   const currency = session.currency
 
-  // FIX: Mask PII in production logs (DSGVO compliance)
+  // Mask PII in production logs (DSGVO compliance)
   const maskedEmail = customerEmail 
     ? (process.env.NODE_ENV === 'production' 
         ? `${customerEmail.substring(0, 2)}***@***` 
@@ -129,19 +130,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log(`Payment Status: ${paymentStatus}`)
   console.log('==================================')
 
-  // FIX: Validate payment status
+  // Validate payment status
   if (paymentStatus !== 'paid') {
     console.error(`Payment not completed. Status: ${paymentStatus}`)
     throw new Error(`Invalid payment status: ${paymentStatus}`)
   }
 
-  // FIX: Validate amount (prevent underpayment attacks)
+  // Validate amount (prevent underpayment attacks)
   if (amountTotal !== EXPECTED_AMOUNT) {
     console.error(`Invalid amount: ${amountTotal}, expected: ${EXPECTED_AMOUNT}`)
     throw new Error(`Invalid payment amount: ${amountTotal}`)
   }
 
-  // FIX: Validate currency
+  // Validate currency
   if (currency?.toLowerCase() !== EXPECTED_CURRENCY) {
     console.error(`Invalid currency: ${currency}, expected: ${EXPECTED_CURRENCY}`)
     throw new Error(`Invalid currency: ${currency}`)
@@ -152,11 +153,25 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     throw new Error('Missing analysisId in metadata')
   }
 
-  // TODO: Save purchase to Supabase when database is set up (Epic 6)
-  // This would:
-  // 1. Mark the analysis as "paid" in the database
-  // 2. Store the purchase record
-  
+  // Update analysis in Supabase
+  const supabase = createAdminClient()
+
+  const { error: updateError } = await supabase
+    .from('analyses')
+    .update({ 
+      paid: true, 
+      paid_at: new Date().toISOString(),
+      stripe_session_id: session.id,
+    })
+    .eq('id', analysisId)
+
+  if (updateError) {
+    console.error('Failed to update analysis in Supabase:', updateError)
+    throw updateError
+  }
+
+  console.log(`✅ Analysis ${analysisId} marked as paid in Supabase`)
+
   // TODO: Send confirmation email (Epic 9 - Pre-Launch Required)
   // See: _bmad-output/planning-artifacts/epics.md (Epic 9)
   // Implementation:
@@ -167,32 +182,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // await sendPurchaseConfirmationEmail({
   //   to: customerEmail,
   //   analysisId,
-  //   downloadLink: `${baseUrl}/ergebnis/${analysisId}?unlocked=true`,
+  //   downloadLink: `${baseUrl}/ergebnis/${analysisId}`,
   //   pdfLink: `${baseUrl}/api/pdf/${analysisId}`,
   //   purchaseDate: new Date(),
   //   amount: amountTotal / 100,
   // })
-  
-  /*
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
-  )
-
-  await supabase.from('purchases').insert({
-    analysis_id: analysisId,
-    stripe_session_id: session.id,
-    customer_email: customerEmail,
-    amount: amountTotal,
-    currency: session.currency,
-    status: 'completed',
-  })
-
-  await supabase
-    .from('analyses')
-    .update({ paid: true, paid_at: new Date().toISOString() })
-    .eq('id', analysisId)
-  */
-
-  console.log(`✅ Analysis ${analysisId} marked as paid`)
 }

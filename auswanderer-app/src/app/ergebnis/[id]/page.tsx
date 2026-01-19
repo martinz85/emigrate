@@ -1,66 +1,157 @@
+import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { notFound } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ResultTeaser } from '@/components/results/ResultTeaser'
 import { ResultUnlocked } from '@/components/results/ResultUnlocked'
 
-/**
- * ⚠️ SECURITY WARNING (MVP):
- * 
- * The current implementation uses a URL parameter (?unlocked=true) to determine
- * whether to show the full result or teaser. This is ONLY for development/demo purposes.
- * 
- * For production (Epic 6), the unlock status MUST be verified server-side:
- * 1. Query Supabase to check if the analysis has been paid for
- * 2. Verify the current user owns the analysis (authentication)
- * 3. Only then return the full country names and data
- * 
- * Example production implementation:
- * ```
- * async function checkPaymentStatus(analysisId: string): Promise<boolean> {
- *   const session = await getServerSession()
- *   if (!session?.user) return false
- *   
- *   const { data } = await supabase
- *     .from('analyses')
- *     .select('paid, user_id')
- *     .eq('id', analysisId)
- *     .single()
- *   
- *   return data?.paid === true && data?.user_id === session.user.id
- * }
- * ```
- */
-
-/**
- * SECURITY: This function returns TEASER data only
- * Country names are NOT included - only lengths and percentages
- * Full data is only sent after payment verification
- */
-function getTeaserResult(id: string) {
-  // In production: fetch from Supabase, verify payment status
-  // Only return country names if user has paid
-  
-  // Demo teaser result - NO country names exposed
-  return {
-    matchPercentage: 92,
-    topCountryNameLength: 8, // "Portugal".length - but name not sent!
-    rankings: [
-      { rank: 1, percentage: 92 },
-      { rank: 2, percentage: 87 },
-      { rank: 3, percentage: 81 },
-      { rank: 4, percentage: 77 },
-      { rank: 5, percentage: 73 },
-    ],
-  }
+export const metadata = {
+  title: 'Dein Ergebnis | Auswanderer-Plattform',
+  description: 'Deine personalisierte Auswanderungs-Analyse ist fertig. Entdecke dein Top-Match!',
 }
 
 /**
- * Full result data - only provided after payment verification
- * In production: This would come from Supabase after verifying payment
+ * Result Page - Server Component
+ * 
+ * Security: Payment status is verified server-side from Supabase.
+ * URL parameters are NOT trusted.
  */
-function getUnlockedResult(id: string) {
-  // Demo unlocked result with full country names
-  return {
+export default async function ResultPage({ 
+  params 
+}: { 
+  params: { id: string }
+}) {
+  const analysisId = params.id
+  
+  // Validate ID format (UUID)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const isDemoId = analysisId === 'demo'
+  
+  if (!isDemoId && !uuidRegex.test(analysisId)) {
+    notFound()
+  }
+
+  const supabase = await createClient()
+  const cookieStore = await cookies()
+  const sessionId = cookieStore.get('session_id')?.value
+
+  // Get current user (may be null for anonymous users)
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Handle demo mode for development
+  if (isDemoId) {
+    return renderDemoPage(analysisId)
+  }
+
+  // Fetch analysis from Supabase
+  const { data: analysis, error } = await supabase
+    .from('analyses')
+    .select('*')
+    .eq('id', analysisId)
+    .single()
+
+  if (error || !analysis) {
+    console.error('Analysis not found:', error)
+    notFound()
+  }
+
+  // Security: Check ownership
+  // User can access if:
+  // 1. They are logged in and own the analysis (user_id matches)
+  // 2. They are anonymous and have the matching session_id
+  // 3. The analysis has no owner (legacy data)
+  const isOwner = 
+    (user && analysis.user_id === user.id) ||
+    (!user && analysis.session_id === sessionId) ||
+    (analysis.user_id === null && analysis.session_id === null)
+
+  // For now, allow viewing teaser even if not owner
+  // But only show full result to owner with paid status
+  const canViewFull = isOwner && analysis.paid === true
+
+  if (canViewFull) {
+    // Full result for paid users
+    const result = analysis.result as {
+      topCountry: string
+      matchPercentage: number
+      rankings: Array<{
+        rank: number
+        country: string
+        percentage: number
+        strengths?: string[]
+        considerations?: string[]
+      }>
+    } | null
+
+    if (!result) {
+      // Analysis exists but no result yet - shouldn't happen
+      console.error('Paid analysis has no result:', analysisId)
+      notFound()
+    }
+
+    return (
+      <>
+        <Header />
+        <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20">
+          <ResultUnlocked 
+            analysisId={analysisId}
+            result={{
+              topCountry: result.topCountry,
+              matchPercentage: result.matchPercentage,
+              rankings: result.rankings,
+            }}
+          />
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
+  // Teaser for unpaid users - extract safe data only
+  const result = analysis.result as {
+    topCountry?: string
+    matchPercentage?: number
+    rankings?: Array<{
+      rank: number
+      percentage: number
+    }>
+  } | null
+
+  const teaserData = {
+    matchPercentage: result?.matchPercentage || 85,
+    topCountryNameLength: result?.topCountry?.length || 8,
+    rankings: result?.rankings?.slice(0, 5).map(r => ({
+      rank: r.rank,
+      percentage: r.percentage,
+    })) || [
+      { rank: 1, percentage: 92 },
+      { rank: 2, percentage: 87 },
+      { rank: 3, percentage: 81 },
+    ],
+  }
+
+  return (
+    <>
+      <Header />
+      <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20">
+        <ResultTeaser 
+          analysisId={analysisId}
+          result={teaserData}
+        />
+      </main>
+      <Footer />
+    </>
+  )
+}
+
+/**
+ * Demo page for development/testing
+ * Shows both teaser and unlocked views depending on query param
+ */
+function renderDemoPage(analysisId: string) {
+  // For demo, show unlocked view with mock data
+  const demoResult = {
     topCountry: 'Portugal',
     matchPercentage: 92,
     rankings: [
@@ -101,53 +192,18 @@ function getUnlockedResult(id: string) {
       },
     ],
   }
-}
-
-export const metadata = {
-  title: 'Dein Ergebnis | Auswanderer-Plattform',
-  description: 'Deine personalisierte Auswanderungs-Analyse ist fertig. Entdecke dein Top-Match!',
-}
-
-interface ResultPageProps {
-  params: { id: string }
-  searchParams: { [key: string]: string | string[] | undefined }
-}
-
-export default function ResultPage({ params, searchParams }: ResultPageProps) {
-  const analysisId = params.id
-  const isUnlocked = searchParams.unlocked === 'true'
-  
-  // In production: verify payment status via Supabase
-  // For now: use URL param to determine which view to show
-  
-  if (isUnlocked) {
-    // Full result for paid users
-    const result = getUnlockedResult(analysisId)
-    
-    return (
-      <>
-        <Header />
-        <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20">
-          <ResultUnlocked 
-            analysisId={analysisId}
-            result={result}
-          />
-        </main>
-        <Footer />
-      </>
-    )
-  }
-
-  // Teaser for unpaid users
-  const result = getTeaserResult(analysisId)
 
   return (
     <>
       <Header />
       <main id="main-content" className="min-h-screen bg-gradient-to-b from-slate-50 to-white pt-20">
-        <ResultTeaser 
+        {/* Demo Banner */}
+        <div className="bg-amber-100 border-b border-amber-200 py-2 text-center text-sm text-amber-800">
+          🛠️ Demo-Modus: Dies sind Beispieldaten
+        </div>
+        <ResultUnlocked 
           analysisId={analysisId}
-          result={result}
+          result={demoResult}
         />
       </main>
       <Footer />

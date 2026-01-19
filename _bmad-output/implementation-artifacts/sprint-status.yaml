@@ -90,12 +90,12 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: User Authentication (Supabase)
-  epic-6: backlog
-  6-1-supabase-auth-setup: backlog
-  6-2-login-page: backlog
-  6-3-auth-middleware: backlog
-  6-4-user-profile-storage: backlog
-  6-5-payment-verification: backlog  # Fixes security: URL-param unlock bypass
+  epic-6: done
+  6-1-supabase-auth-setup: done
+  6-2-login-page: done
+  6-3-auth-middleware: done
+  6-4-user-profile-storage: done
+  6-5-payment-verification: done  # ✅ SECURITY FIX: Server-side payment verification
   epic-6-retrospective: optional
 
   # Epic 9: Transaktions-E-Mails (Pre-Launch Required)
