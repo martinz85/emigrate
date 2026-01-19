@@ -10,6 +10,15 @@ export async function DELETE(
 ) {
   const discountId = params.id
 
+  // Validate UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(discountId)) {
+    return NextResponse.json(
+      { error: 'Ungültige Discount-ID' },
+      { status: 400 }
+    )
+  }
+
   // Verify admin access
   const supabaseAuth = await createClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()

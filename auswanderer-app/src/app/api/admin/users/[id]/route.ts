@@ -88,7 +88,18 @@ export async function DELETE(
       }
     }
 
-    // 3. Delete profile
+    // 3. Delete admin_users entry (if user was admin)
+    const { error: adminError } = await supabase
+      .from('admin_users')
+      .delete()
+      .eq('id', userId)
+
+    if (adminError) {
+      // Non-critical: user might not be an admin
+      console.log('No admin entry to delete or error:', adminError.message)
+    }
+
+    // 4. Delete profile
     const { error: profileError } = await supabase
       .from('profiles')
       .delete()
@@ -102,7 +113,7 @@ export async function DELETE(
       )
     }
 
-    // 4. Delete auth user (requires admin client)
+    // 5. Delete auth user (requires admin client)
     const { error: authError } = await supabase.auth.admin.deleteUser(userId)
 
     if (authError) {
