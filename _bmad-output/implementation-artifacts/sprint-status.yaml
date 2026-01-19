@@ -149,9 +149,9 @@ development_status:
   8-3-subscription-management: backlog
 
   # Epic 11: Technical Improvements (Post-MVP, from Code Reviews)
-  epic-11: backlog
-  11-1-audit-logs-persistence: backlog      # Persist audit logs to DB table for DSGVO compliance
-  11-2-newsletter-export-pagination: backlog # Pagination/streaming for large exports (>10k)
-  11-3-dynamic-pricing: backlog             # Load EXPECTED_AMOUNT from DB, support discount codes
-  11-4-stripe-coupon-integration: backlog   # Sync discount_codes with Stripe Coupons
+  epic-11: done
+  11-1-audit-logs-persistence: done      # Persist audit logs to DB table ✅
+  11-2-newsletter-export-pagination: done # Limit 10k with warning ✅
+  11-3-dynamic-pricing: done             # Support discount codes in webhook ✅
+  11-4-stripe-coupon-integration: done   # Sync with Stripe Coupons ✅
 

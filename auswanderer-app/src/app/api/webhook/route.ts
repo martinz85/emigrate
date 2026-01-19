@@ -101,8 +101,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Expected payment configuration
-const EXPECTED_AMOUNT = 2999 // 29,99€ in cents
+// Payment configuration
+const STANDARD_AMOUNT = 2999 // 29,99€ in cents
+const MINIMUM_AMOUNT = 100 // 1€ minimum (for discount edge cases)
 const EXPECTED_CURRENCY = 'eur'
 
 /**
@@ -145,9 +146,20 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   // Validate amount (prevent underpayment attacks)
-  if (amountTotal !== EXPECTED_AMOUNT) {
-    console.error(`Invalid amount: ${amountTotal}, expected: ${EXPECTED_AMOUNT}`)
-    throw new Error(`Invalid payment amount: ${amountTotal}`)
+  // Allow discounted amounts but enforce minimum
+  if (!amountTotal || amountTotal < MINIMUM_AMOUNT) {
+    console.error(`Amount too low: ${amountTotal}, minimum: ${MINIMUM_AMOUNT}`)
+    throw new Error(`Payment amount too low: ${amountTotal}`)
+  }
+
+  // If amount is less than standard, verify discount was applied
+  if (amountTotal < STANDARD_AMOUNT) {
+    const discountApplied = session.total_details?.amount_discount
+    if (!discountApplied || discountApplied <= 0) {
+      console.error(`Underpayment without discount: ${amountTotal}, expected: ${STANDARD_AMOUNT}`)
+      throw new Error(`Invalid payment amount without discount: ${amountTotal}`)
+    }
+    console.log(`Discount applied: ${discountApplied / 100}€`)
   }
 
   // Validate currency

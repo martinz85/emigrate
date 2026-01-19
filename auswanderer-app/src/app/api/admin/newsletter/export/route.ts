@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
+import { logAuditEvent } from '@/lib/audit'
 
 /**
  * Admin API: Export Newsletter Subscribers
  * 
  * Supports CSV and JSON formats for Odoo/Mailchimp integration.
+ * Limited to MAX_EXPORT_SIZE to prevent memory issues.
  */
+
+const MAX_EXPORT_SIZE = 10000 // Limit to prevent memory issues
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const format = searchParams.get('format') || 'csv'
@@ -32,28 +37,43 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient()
 
-  // Build query
+  // Build query with pagination limit
   let query = supabase
     .from('newsletter_subscribers')
-    .select('email, opted_in_at, source, language')
+    .select('email, opted_in_at, source, language', { count: 'exact' })
     .order('opted_in_at', { ascending: false })
+    .limit(MAX_EXPORT_SIZE)
 
   if (from) query = query.gte('opted_in_at', from)
   if (to) query = query.lte('opted_in_at', to)
 
-  const { data, error } = await query
+  const { data, count, error } = await query
+
+  // Check if export was truncated
+  const isTruncated = count !== null && count > MAX_EXPORT_SIZE
 
   if (error) {
     console.error('Newsletter export error:', error)
     return NextResponse.json({ error: 'Export fehlgeschlagen' }, { status: 500 })
   }
 
-  console.log(`[AUDIT] Newsletter export (${format}) by admin ${user.id}, ${data?.length || 0} records`)
+  // Persist audit log
+  await logAuditEvent({
+    action: 'NEWSLETTER_EXPORTED',
+    targetType: 'newsletter',
+    adminId: user.id,
+    metadata: { format, recordCount: data?.length || 0, from, to },
+  })
 
   if (format === 'json') {
     return NextResponse.json({
       exportedAt: new Date().toISOString(),
       count: data?.length || 0,
+      totalCount: count || data?.length || 0,
+      truncated: isTruncated,
+      warning: isTruncated 
+        ? `Export limitiert auf ${MAX_EXPORT_SIZE} von ${count} Abonnenten. Nutze Datumsfilter für vollständigen Export.`
+        : null,
       subscribers: data,
     })
   }
