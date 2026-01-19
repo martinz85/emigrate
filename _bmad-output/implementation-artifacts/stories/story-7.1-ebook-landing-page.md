@@ -2,7 +2,7 @@
 story_id: "7.1"
 title: "E-Book Landing Page"
 epic: "Epic 7 - E-Book Integration"
-status: review
+status: done
 created: 2026-01-19
 created_by: Bob (SM)
 priority: high
@@ -71,35 +71,35 @@ damit ich verstehe welche E-Books verfügbar sind und diese kaufen kann.
 
 ## Technical Tasks
 
-- [ ] **Task 1: Route und Layout erstellen**
-  - [ ] Erstelle `/app/(marketing)/ebooks/page.tsx`
-  - [ ] Füge Meta-Tags hinzu (title, description, og:image)
-  - [ ] Implementiere JSON-LD für Product Schema
+- [x] **Task 1: Route und Layout erstellen**
+  - [x] Erstelle `/app/ebooks/page.tsx` (Note: nicht im marketing Ordner, da Layout nur passthrough)
+  - [x] Füge Meta-Tags hinzu (title, description, og:image)
+  - [x] Implementiere JSON-LD für Product Schema
 
-- [ ] **Task 2: E-Book Datenstruktur**
-  - [ ] Erstelle `/lib/ebooks.ts` mit E-Book Definitionen
-  - [ ] Definiere TypeScript Interface `Ebook`
-  - [ ] Exportiere alle 4 E-Books + Bundle
+- [x] **Task 2: E-Book Datenstruktur**
+  - [x] Erstelle `/lib/ebooks.ts` mit E-Book Definitionen
+  - [x] Definiere TypeScript Interface `Ebook`
+  - [x] Exportiere alle 4 E-Books + Bundle
 
-- [ ] **Task 3: EbookCard Component**
-  - [ ] Erstelle `/components/ebooks/EbookCard.tsx`
-  - [ ] Props: ebook, isPro, onBuy
-  - [ ] Design: Karte mit Bild-Platzhalter, Titel, Beschreibung, Preis
-  - [ ] Badge für "Empfohlen" (Bundle)
+- [x] **Task 3: EbookCard Component**
+  - [x] Erstelle `/components/ebooks/EbookCard.tsx`
+  - [x] Props: ebook, isPro, onBuy
+  - [x] Design: Karte mit Bild-Platzhalter, Titel, Beschreibung, Preis
+  - [x] Badge für "Empfohlen" (Bundle)
 
-- [ ] **Task 4: EbookGrid Component**
-  - [ ] Erstelle `/components/ebooks/EbookGrid.tsx`
-  - [ ] Responsive Grid (1 Spalte Mobile, 2 Tablet, 4 Desktop)
-  - [ ] Bundle prominent am Ende oder Anfang
+- [x] **Task 4: EbookGrid Component**
+  - [x] Erstelle `/components/ebooks/EbookGrid.tsx`
+  - [x] Responsive Grid (1 Spalte Mobile, 2 Tablet, 4 Desktop)
+  - [x] Bundle prominent am Ende oder Anfang
 
-- [ ] **Task 5: PRO-Status Integration**
-  - [ ] Prüfe PRO-Status via Supabase Auth
-  - [ ] Konditionelle Darstellung für PRO-User
-  - [ ] "Im Abo enthalten" Badge
+- [x] **Task 5: PRO-Status Integration**
+  - [x] Prüfe PRO-Status via Supabase Auth
+  - [x] Konditionelle Darstellung für PRO-User
+  - [x] "Im Abo enthalten" Badge
 
-- [ ] **Task 6: Navigation Update**
-  - [ ] Füge "E-Books" zur Header-Navigation hinzu
-  - [ ] Link zu `/ebooks`
+- [x] **Task 6: Navigation Update**
+  - [x] Füge "E-Books" zur Header-Navigation hinzu
+  - [x] Link zu `/ebooks`
 
 ## Dev Notes
 
@@ -153,11 +153,11 @@ interface Ebook {
 
 ## Testing Checklist
 
-- [ ] Seite lädt auf Desktop, Tablet, Mobile
-- [ ] Alle 4 E-Books + Bundle werden angezeigt
-- [ ] PRO-User sieht "Im Abo enthalten"
-- [ ] Free-User sieht Preise
-- [ ] Navigation Link funktioniert
-- [ ] Meta-Tags sind korrekt gesetzt
+- [x] Seite lädt auf Desktop, Tablet, Mobile
+- [x] Alle 4 E-Books + Bundle werden angezeigt
+- [x] PRO-User sieht "Im Abo enthalten"
+- [x] Free-User sieht Preise
+- [x] Navigation Link funktioniert
+- [x] Meta-Tags sind korrekt gesetzt
 - [ ] Lighthouse Score > 90
 

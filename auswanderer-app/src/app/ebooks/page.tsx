@@ -2,8 +2,10 @@ import { Metadata } from 'next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { EbookGrid } from '@/components/ebooks'
-import { EBOOKS, EBOOK_BUNDLE, formatEbookPrice, getBundleSavings } from '@/lib/ebooks'
+import { EBOOKS, EBOOK_BUNDLE, getBundleSavings } from '@/lib/ebooks'
 import { createClient } from '@/lib/supabase/server'
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://auswanderer-plattform.de'
 
 export const metadata: Metadata = {
   title: 'E-Books für Auswanderer | Auswanderer-Plattform',
@@ -12,6 +14,15 @@ export const metadata: Metadata = {
     title: 'E-Books für Auswanderer',
     description: 'Expertenwissen für deinen Neustart im Ausland. 4 E-Books von erfahrenen Auswanderern.',
     type: 'website',
+    url: `${BASE_URL}/ebooks`,
+    images: [
+      {
+        url: `${BASE_URL}/og-ebooks.png`,
+        width: 1200,
+        height: 630,
+        alt: 'E-Books für Auswanderer',
+      },
+    ],
   },
 }
 
@@ -61,7 +72,7 @@ function generateJsonLd() {
         '@type': 'WebPage',
         name: 'E-Books für Auswanderer',
         description: 'Expertenwissen für deinen Neustart im Ausland',
-        url: 'https://auswanderer-plattform.de/ebooks',
+        url: `${BASE_URL}/ebooks`,
       },
       {
         '@type': 'ItemList',

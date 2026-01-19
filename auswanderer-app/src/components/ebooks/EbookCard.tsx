@@ -10,6 +10,7 @@ interface EbookCardProps {
   hasPurchased?: boolean
   onBuy?: (ebook: Ebook) => void
   showDetails?: boolean
+  onToggleDetails?: () => void
 }
 
 export function EbookCard({
@@ -18,17 +19,18 @@ export function EbookCard({
   hasPurchased = false,
   onBuy,
   showDetails = false,
+  onToggleDetails,
 }: EbookCardProps) {
   const hasAccess = isPro || hasPurchased
 
-  const handleClick = () => {
+  const handleBuyClick = () => {
     if (onBuy && !hasAccess) {
       onBuy(ebook)
     }
   }
 
   return (
-    <div className="card-hover relative">
+    <div className="card-hover relative cursor-pointer" onClick={onToggleDetails}>
       {/* Bundle Badge */}
       {ebook.isBundle && (
         <div className="absolute -top-3 -right-3 z-10">
@@ -76,8 +78,9 @@ export function EbookCard({
                   {isPro ? 'Im PRO-Abo enthalten' : 'Gekauft'}
                 </Badge>
                 <Link
-                  href={`/dashboard/ebooks`}
-                  className="btn-primary text-sm px-4 py-2"
+                  href="/ebooks"
+                  className="btn-primary text-sm px-4 py-2 min-h-[48px]"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   Jetzt lesen
                 </Link>
@@ -88,14 +91,30 @@ export function EbookCard({
                   {formatEbookPrice(ebook.price)}
                 </span>
                 <button
-                  onClick={handleClick}
-                  className="btn-primary text-sm px-4 py-2 min-h-[44px]"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleBuyClick()
+                  }}
+                  className="btn-primary text-sm px-4 py-2 min-h-[48px]"
                 >
                   Kaufen
                 </button>
               </>
             )}
           </div>
+
+          {/* Details Toggle Hint */}
+          {onToggleDetails && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleDetails()
+              }}
+              className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium min-h-[48px] flex items-center gap-1"
+            >
+              {showDetails ? '▲ Weniger anzeigen' : '▼ Details & Inhaltsverzeichnis'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -103,7 +122,7 @@ export function EbookCard({
       {showDetails && (
         <div className="mt-6 pt-6 border-t border-slate-200">
           <h4 className="font-semibold text-sm mb-3">Inhaltsverzeichnis</h4>
-          <ul className="grid grid-cols-2 gap-2 text-sm text-slate-600">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-600">
             {ebook.chapters.map((chapter, index) => (
               <li key={chapter} className="flex items-start gap-2">
                 <span className="text-slate-400">{index + 1}.</span>

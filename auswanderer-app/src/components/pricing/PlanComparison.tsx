@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { BillingToggle, BillingPeriod } from './BillingToggle'
 import { FeatureList } from './FeatureList'
-import { Plan, formatPlanPrice, getYearlySavings, PLAN_FEATURES } from '@/lib/plans'
+import { Plan, formatPlanPrice, getYearlySavings } from '@/lib/plans'
 
 interface PlanComparisonProps {
   plans: Plan[]
@@ -64,7 +64,7 @@ export function PlanComparison({ plans, isPro = false, onSelectPlan }: PlanCompa
           <div className="mt-8">
             <Link
               href="/analyse"
-              className="block text-center py-3 rounded-lg font-semibold bg-slate-100 text-slate-900 hover:bg-slate-200 transition-all"
+              className="block text-center py-3 rounded-lg font-semibold bg-slate-100 text-slate-900 hover:bg-slate-200 transition-all min-h-[48px]"
             >
               Kostenlos starten
             </Link>
@@ -109,23 +109,22 @@ export function PlanComparison({ plans, isPro = false, onSelectPlan }: PlanCompa
 
           <div className="mt-8">
             {isPro ? (
-              <Link
-                href="/dashboard/subscription"
-                className="block text-center py-3 rounded-lg font-semibold bg-slate-100 text-slate-700 transition-all"
+              <div
+                className="block text-center py-3 rounded-lg font-semibold bg-green-100 text-green-700 min-h-[48px] flex items-center justify-center gap-2"
               >
-                ✓ Du bist bereits PRO
-              </Link>
+                <span>✓</span> Du bist bereits PRO
+              </div>
             ) : onSelectPlan ? (
               <button
                 onClick={() => onSelectPlan(proPlan, billing)}
-                className="w-full py-3 rounded-lg font-semibold bg-primary-500 text-white hover:bg-primary-600 transition-all"
+                className="w-full py-3 rounded-lg font-semibold bg-primary-500 text-white hover:bg-primary-600 transition-all min-h-[48px]"
               >
                 PRO werden ⭐
               </button>
             ) : (
               <Link
                 href={`/checkout?product=pro&billing=${billing}`}
-                className="block text-center py-3 rounded-lg font-semibold bg-primary-500 text-white hover:bg-primary-600 transition-all"
+                className="block text-center py-3 rounded-lg font-semibold bg-primary-500 text-white hover:bg-primary-600 transition-all min-h-[48px]"
               >
                 PRO werden ⭐
               </Link>

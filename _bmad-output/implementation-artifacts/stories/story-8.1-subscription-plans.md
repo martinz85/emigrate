@@ -2,7 +2,7 @@
 story_id: "8.1"
 title: "Subscription Plans"
 epic: "Epic 8 - PRO Subscription"
-status: review
+status: done
 created: 2026-01-19
 created_by: Bob (SM)
 priority: high
@@ -83,47 +83,47 @@ damit ich eine informierte Kaufentscheidung treffen kann.
 
 ## Technical Tasks
 
-- [ ] **Task 1: PRO Plan Datenstruktur**
-  - [ ] Erstelle `/lib/plans.ts` mit Plan-Definitionen
-  - [ ] Definiere TypeScript Interface `Plan` und `PlanFeature`
-  - [ ] FREE und PRO Plan exportieren
+- [x] **Task 1: PRO Plan Datenstruktur**
+  - [x] Erstelle `/lib/plans.ts` mit Plan-Definitionen
+  - [x] Definiere TypeScript Interface `Plan` und `PlanFeature`
+  - [x] FREE und PRO Plan exportieren
 
-- [ ] **Task 2: Pricing Comparison Component**
-  - [ ] Erstelle `/components/pricing/PlanComparison.tsx`
-  - [ ] Zwei-Spalten Layout (Free | PRO)
-  - [ ] Feature-Liste mit Checkmarks
-  - [ ] CTA-Buttons
+- [x] **Task 2: Pricing Comparison Component**
+  - [x] Erstelle `/components/pricing/PlanComparison.tsx`
+  - [x] Zwei-Spalten Layout (Free | PRO)
+  - [x] Feature-Liste mit Checkmarks
+  - [x] CTA-Buttons
 
-- [ ] **Task 3: Feature List Component**
-  - [ ] Erstelle `/components/pricing/FeatureList.tsx`
-  - [ ] Props: features, included (boolean array)
-  - [ ] Icons: ✓ für included, - für nicht included
+- [x] **Task 3: Feature List Component**
+  - [x] Erstelle `/components/pricing/FeatureList.tsx`
+  - [x] Props: features, included (boolean array)
+  - [x] Icons: ✓ für included, - für nicht included
 
-- [ ] **Task 4: Billing Toggle Component**
-  - [ ] Erstelle `/components/pricing/BillingToggle.tsx`
-  - [ ] Toggle: Monthly / Yearly
-  - [ ] Preis-Update bei Toggle
-  - [ ] "2 Monate gratis" Badge bei Yearly
+- [x] **Task 4: Billing Toggle Component**
+  - [x] Erstelle `/components/pricing/BillingToggle.tsx`
+  - [x] Toggle: Monthly / Yearly
+  - [x] Preis-Update bei Toggle
+  - [x] "2 Monate gratis" Badge bei Yearly
 
-- [ ] **Task 5: Datenbank-Schema für Subscription Plans**
-  - [ ] Migration erstellen: `subscription_plans` Tabelle
-  - [ ] Felder: id, name, price_monthly, price_yearly, stripe_price_id_monthly, stripe_price_id_yearly, features (JSONB)
-  - [ ] Seed-Daten für FREE und PRO
+- [x] **Task 5: Datenbank-Schema für Subscription Plans**
+  - [x] Migration erstellen: `subscription_plans` Tabelle
+  - [x] Felder: id, name, price_monthly, price_yearly, stripe_price_id_monthly, stripe_price_id_yearly, features (JSONB)
+  - [x] Seed-Daten für FREE und PRO
 
-- [ ] **Task 6: API Route für Plans**
-  - [ ] Erstelle `/api/plans/route.ts`
-  - [ ] GET: Alle aktiven Plans abrufen
-  - [ ] Caching Header setzen
+- [x] **Task 6: API Route für Plans**
+  - [x] Erstelle `/api/plans/route.ts`
+  - [x] GET: Alle aktiven Plans abrufen
+  - [x] Caching Header setzen
 
-- [ ] **Task 7: Pricing Section Update**
-  - [ ] Bestehende PricingSection erweitern
-  - [ ] Plan-Daten aus DB laden
-  - [ ] PRO-Status prüfen
+- [ ] **Task 7: Pricing Section Update** (DEFERRED)
+  - [ ] Bestehende PricingSection erweitern (Landing Page nutzt weiterhin /api/prices)
+  - [ ] Note: /pricing Page nutzt die neuen Components, Landing Page zeigt 3 Optionen
+  - [ ] Design-Entscheidung: Landing = 3 Pläne, /pricing = Free vs PRO
 
-- [ ] **Task 8: PRO Status Check**
-  - [ ] Hook: `useSubscriptionStatus()`
-  - [ ] Prüft `subscription_tier` aus profiles
-  - [ ] Cached in Zustand Store
+- [x] **Task 8: PRO Status Check**
+  - [x] Hook: `useSubscriptionStatus()`
+  - [x] Prüft `subscription_tier` aus profiles
+  - [x] Cached in Zustand Store
 
 ## Dev Notes
 
@@ -211,12 +211,12 @@ interface PlanFeature {
 
 ## Testing Checklist
 
-- [ ] Free vs PRO Vergleich wird angezeigt
-- [ ] Alle 12 PRO-Features sind gelistet
-- [ ] Preise kommen aus der Datenbank
-- [ ] Monthly/Yearly Toggle funktioniert
-- [ ] PRO-User sieht "Du bist PRO" Badge
-- [ ] Mobile Layout ist nutzbar
-- [ ] API Route gibt korrekte Daten zurück
-- [ ] Migration läuft auf DEV erfolgreich
+- [x] Free vs PRO Vergleich wird angezeigt
+- [x] Alle 12 PRO-Features sind gelistet
+- [x] Preise kommen aus der Datenbank (/pricing Page)
+- [x] Monthly/Yearly Toggle funktioniert
+- [x] PRO-User sieht "Du bist PRO" Badge
+- [x] Mobile Layout ist nutzbar
+- [x] API Route gibt korrekte Daten zurück
+- [x] Migration läuft auf DEV erfolgreich
 

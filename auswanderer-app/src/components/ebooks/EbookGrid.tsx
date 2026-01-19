@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Ebook, EBOOKS, EBOOK_BUNDLE, getBundleSavings, formatEbookPrice } from '@/lib/ebooks'
 import { EbookCard } from './EbookCard'
 import Link from 'next/link'
@@ -12,16 +13,21 @@ interface EbookGridProps {
 
 export function EbookGrid({ isPro = false, purchasedEbooks = [], onBuy }: EbookGridProps) {
   const { originalPrice, savingsPercent } = getBundleSavings()
+  const [expandedEbook, setExpandedEbook] = useState<string | null>(null)
 
   // Check if user has access to all ebooks (via bundle or individual purchases)
   const hasAllEbooks = isPro || 
     purchasedEbooks.includes('bundle') ||
     EBOOKS.every(ebook => purchasedEbooks.includes(ebook.slug))
 
+  const handleToggleDetails = (ebookId: string) => {
+    setExpandedEbook(prev => prev === ebookId ? null : ebookId)
+  }
+
   return (
     <div className="space-y-12">
-      {/* E-Books Grid */}
-      <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+      {/* E-Books Grid - 1 col mobile, 2 col tablet, 4 col desktop */}
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-8">
         {EBOOKS.map((ebook) => (
           <EbookCard
             key={ebook.id}
@@ -29,6 +35,8 @@ export function EbookGrid({ isPro = false, purchasedEbooks = [], onBuy }: EbookG
             isPro={isPro}
             hasPurchased={purchasedEbooks.includes(ebook.slug) || purchasedEbooks.includes('bundle')}
             onBuy={onBuy}
+            showDetails={expandedEbook === ebook.id}
+            onToggleDetails={() => handleToggleDetails(ebook.id)}
           />
         ))}
       </div>
@@ -85,7 +93,7 @@ export function EbookGrid({ isPro = false, purchasedEbooks = [], onBuy }: EbookG
               ) : (
                 <Link
                   href="/checkout?product=ebook_bundle"
-                  className="inline-block bg-white text-primary-600 px-8 py-3 rounded-lg font-bold hover:bg-slate-100 transition-colors"
+                  className="inline-block bg-white text-primary-600 px-8 py-3 rounded-lg font-bold hover:bg-slate-100 transition-colors min-h-[48px]"
                 >
                   Bundle kaufen
                 </Link>
