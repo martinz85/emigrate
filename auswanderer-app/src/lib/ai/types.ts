@@ -1,14 +1,14 @@
 /**
  * AI Provider Types & Interfaces
  *
- * Supports: Claude, OpenAI, Gemini
+ * Supports: Claude, OpenAI, Gemini, Groq
  */
 
 // ============================================
 // PROVIDER TYPES
 // ============================================
 
-export type AIProvider = 'claude' | 'openai' | 'gemini'
+export type AIProvider = 'claude' | 'openai' | 'gemini' | 'groq'
 
 export interface AIProviderConfig {
   id: string // 'primary', 'fallback_1', 'fallback_2'

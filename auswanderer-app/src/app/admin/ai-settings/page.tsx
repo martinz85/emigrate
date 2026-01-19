@@ -5,7 +5,7 @@ import { ModelUpdatesWidget } from './ModelUpdatesWidget'
 
 interface ProviderConfig {
   id: string
-  provider: 'claude' | 'openai' | 'gemini'
+  provider: 'claude' | 'openai' | 'gemini' | 'groq'
   model: string
   is_active: boolean
   priority: number
@@ -29,10 +29,11 @@ interface AIModel {
   is_deprecated: boolean
 }
 
-const PROVIDER_LABELS = {
+const PROVIDER_LABELS: Record<string, { name: string; icon: string; color: string }> = {
   claude: { name: 'Claude (Anthropic)', icon: '🟣', color: 'bg-purple-100 text-purple-700' },
   openai: { name: 'OpenAI', icon: '🟢', color: 'bg-green-100 text-green-700' },
   gemini: { name: 'Google Gemini', icon: '🔵', color: 'bg-blue-100 text-blue-700' },
+  groq: { name: 'Groq (Ultra-Fast)', icon: '🟠', color: 'bg-orange-100 text-orange-700' },
 }
 
 export default function AdminAISettingsPage() {
@@ -438,7 +439,8 @@ export default function AdminAISettingsPage() {
           <li>• Verwende die Pfeile um die Reihenfolge zu ändern</li>
           <li>• API Keys werden AES-256 verschlüsselt in der DB gespeichert</li>
           <li>• <strong>🤖 Catalog Agent:</strong> Der markierte Provider prüft wöchentlich auf neue Modelle</li>
-          <li>• Empfehlung: Gemini als Catalog Agent (kostenloses Kontingent)</li>
+          <li>• Empfehlung: Gemini oder Groq als Catalog Agent (kostenloses Kontingent)</li>
+          <li>• <strong>🟠 Groq:</strong> Ultra-schnell (10-20x), nutzt Llama 3.1 & Mixtral - kostenloser Tier!</li>
           <li>• Preise sind in USD pro 1.000 Tokens angegeben</li>
         </ul>
       </div>

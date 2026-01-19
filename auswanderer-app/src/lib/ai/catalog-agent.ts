@@ -57,6 +57,36 @@ Wichtig:
 - Bei Unsicherheit lieber weglassen`
 
 /**
+ * Get the configured catalog agent provider
+ */
+async function getCatalogAgentProvider(): Promise<AIProvider> {
+  const supabase = createAdminClient()
+  
+  // Find provider marked as catalog agent
+  const { data: agentConfig } = await supabase
+    .from('ai_provider_config')
+    .select('provider')
+    .eq('is_catalog_agent', true)
+    .single()
+  
+  if (agentConfig?.provider) {
+    return agentConfig.provider as AIProvider
+  }
+  
+  // Fallback: use first active provider with API key
+  const { data: fallbackConfig } = await supabase
+    .from('ai_provider_config')
+    .select('provider')
+    .eq('is_active', true)
+    .not('api_key_encrypted', 'is', null)
+    .order('priority')
+    .limit(1)
+    .single()
+  
+  return (fallbackConfig?.provider as AIProvider) || 'claude'
+}
+
+/**
  * Run the catalog check
  */
 export async function runCatalogCheck(
@@ -94,8 +124,11 @@ export async function runCatalogCheck(
     // 2. Fetch pricing pages (simplified - in production would use proper scraping)
     const pricingContent = await fetchPricingPages()
 
-    // 3. Use Claude to analyze changes
-    const adapter = await getSpecificAdapter('claude')
+    // 3. Get configured catalog agent provider and use it
+    const catalogProvider = await getCatalogAgentProvider()
+    console.log(`[Catalog] Using ${catalogProvider} as catalog agent`)
+    
+    const adapter = await getSpecificAdapter(catalogProvider)
 
     const response = await adapter.chat({
       system: CATALOG_AGENT_PROMPT,

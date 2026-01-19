@@ -7,7 +7,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { decryptApiKey, isEncryptionConfigured } from './encryption'
-import { ClaudeAdapter, OpenAIAdapter, GeminiAdapter } from './adapters'
+import { ClaudeAdapter, OpenAIAdapter, GeminiAdapter, GroqAdapter } from './adapters'
 import type {
   AIAdapter,
   AIProvider,
@@ -121,6 +121,15 @@ async function createAdapter(config: AIProviderConfig): Promise<AIAdapter> {
         costs?.output ?? 0.005
       )
 
+    case 'groq':
+      return new GroqAdapter(
+        apiKey,
+        config.model,
+        config.settings,
+        costs?.input ?? 0.00059,  // Llama 3.1 70B
+        costs?.output ?? 0.00079
+      )
+
     default:
       throw new Error(`Unknown provider: ${config.provider}`)
   }
@@ -193,6 +202,8 @@ function getEnvApiKey(provider: AIProvider): string | undefined {
       return process.env.OPENAI_API_KEY
     case 'gemini':
       return process.env.GOOGLE_AI_API_KEY
+    case 'groq':
+      return process.env.GROQ_API_KEY
     default:
       return undefined
   }
@@ -236,6 +247,18 @@ function getEnvFallbackConfig(): AIProviderConfig[] {
       apiKey: process.env.GOOGLE_AI_API_KEY,
       isActive: true,
       priority: 2,
+      settings: { maxTokens: 4096, temperature: 0.7 },
+    })
+  }
+
+  if (process.env.GROQ_API_KEY) {
+    configs.push({
+      id: 'env_groq',
+      provider: 'groq',
+      model: 'llama-3.1-70b-versatile',
+      apiKey: process.env.GROQ_API_KEY,
+      isActive: true,
+      priority: 3,
       settings: { maxTokens: 4096, temperature: 0.7 },
     })
   }
