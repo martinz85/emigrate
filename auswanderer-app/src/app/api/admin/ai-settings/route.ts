@@ -105,7 +105,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { id, provider, model, apiKey, isActive, priority, settings } = body
+    const { id, provider, model, apiKey, isActive, is_active, priority, settings, is_catalog_agent } = body
 
     if (!id) {
       return NextResponse.json({ error: 'ID erforderlich' }, { status: 400 })
@@ -128,8 +128,21 @@ export async function PUT(request: NextRequest) {
     if (provider !== undefined) updateData.provider = provider
     if (model !== undefined) updateData.model = model
     if (isActive !== undefined) updateData.is_active = isActive
+    if (is_active !== undefined) updateData.is_active = is_active
     if (priority !== undefined) updateData.priority = priority
     if (settings !== undefined) updateData.settings = settings
+    
+    // Handle catalog agent toggle (only one can be true)
+    if (is_catalog_agent !== undefined) {
+      if (is_catalog_agent) {
+        // First, unset all others
+        await supabase
+          .from('ai_provider_config')
+          .update({ is_catalog_agent: false })
+          .neq('id', id)
+      }
+      updateData.is_catalog_agent = is_catalog_agent
+    }
 
     // Handle API key (encrypt if provided)
     if (apiKey) {
@@ -164,8 +177,9 @@ export async function PUT(request: NextRequest) {
       metadata: {
         provider,
         model,
-        isActive,
+        isActive: isActive || is_active,
         priority,
+        isCatalogAgent: is_catalog_agent,
         apiKeyChanged: !!apiKey,
       },
     })

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AdminCard } from '../components'
 import { ModelUpdatesWidget } from './ModelUpdatesWidget'
 
 interface ProviderConfig {
@@ -10,6 +9,7 @@ interface ProviderConfig {
   model: string
   is_active: boolean
   priority: number
+  is_catalog_agent: boolean  // Für Catalog Agent Funktion
   settings: {
     max_tokens?: number
     temperature?: number
@@ -139,9 +139,112 @@ export default function AdminAISettingsPage() {
         </div>
       )}
 
+      {/* Priority Ordering */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <h2 className="font-semibold text-slate-900 mb-4">🎯 Prioritäts-Reihenfolge</h2>
+        <p className="text-sm text-slate-600 mb-4">
+          Ziehe die Provider in die gewünschte Reihenfolge oder verwende die Pfeile. 
+          Provider 1 wird zuerst versucht, bei Fehler kommt Provider 2, usw.
+        </p>
+        <div className="space-y-2">
+          {[...configs]
+            .sort((a, b) => a.priority - b.priority)
+            .map((config, index) => {
+              const providerInfo = PROVIDER_LABELS[config.provider]
+              const isSaving = savingId === config.id
+
+              return (
+                <div
+                  key={config.id}
+                  className={`flex items-center gap-4 p-3 rounded-lg ${
+                    config.is_active ? 'bg-slate-50' : 'bg-slate-100 opacity-60'
+                  }`}
+                >
+                  {/* Priority Arrows */}
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => {
+                        if (index === 0) return
+                        const newPriority = configs[index - 1]?.priority - 1 || 0
+                        handleSave(config, { priority: newPriority })
+                      }}
+                      disabled={index === 0 || isSaving}
+                      className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                      title="Nach oben"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (index === configs.length - 1) return
+                        const nextConfig = [...configs].sort((a, b) => a.priority - b.priority)[index + 1]
+                        handleSave(config, { priority: nextConfig.priority + 1 })
+                      }}
+                      disabled={index === configs.length - 1 || isSaving}
+                      className="p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                      title="Nach unten"
+                    >
+                      ▼
+                    </button>
+                  </div>
+
+                  {/* Priority Number */}
+                  <div className="w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center font-bold">
+                    {index + 1}
+                  </div>
+
+                  {/* Provider Info */}
+                  <span className="text-xl">{providerInfo.icon}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-900">{providerInfo.name}</span>
+                      {config.is_catalog_agent && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                          🤖 Catalog Agent
+                        </span>
+                      )}
+                      {!config.is_active && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-500">
+                          Deaktiviert
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm text-slate-500">{config.model}</span>
+                  </div>
+
+                  {/* API Key Status */}
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    config.has_api_key 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {config.has_api_key ? '✓ Key' : '✗ Kein Key'}
+                  </span>
+
+                  {/* Catalog Agent Toggle */}
+                  <button
+                    onClick={() => handleSave(config, { is_catalog_agent: !config.is_catalog_agent })}
+                    disabled={isSaving}
+                    className={`px-3 py-1 rounded text-xs font-medium ${
+                      config.is_catalog_agent
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                    title="Als Catalog Agent verwenden (für wöchentliche Model-Checks)"
+                  >
+                    🤖 Agent
+                  </button>
+                </div>
+              )
+            })}
+        </div>
+      </div>
+
       {/* Provider Cards */}
       <div className="grid gap-6">
-        {configs.map((config, index) => {
+        {[...configs]
+          .sort((a, b) => a.priority - b.priority)
+          .map((config, index) => {
           const providerInfo = PROVIDER_LABELS[config.provider]
           const availableModels = getModelsForProvider(config.provider)
           const currentModel = models.find((m) => m.id === config.model)
@@ -160,11 +263,13 @@ export default function AdminAISettingsPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-slate-900">
-                        {config.id === 'primary' ? 'Primary' : `Fallback ${index}`}
+                        #{index + 1} - {providerInfo.name}
                       </h3>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${providerInfo.color}`}>
-                        {providerInfo.name}
-                      </span>
+                      {config.is_catalog_agent && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                          🤖 Catalog Agent
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-slate-500">{config.model}</p>
                   </div>
@@ -274,7 +379,7 @@ export default function AdminAISettingsPage() {
 
               {/* Settings */}
               <div className="mt-4 pt-4 border-t border-slate-100">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium text-slate-500 mb-1">
                       Max Tokens
@@ -310,18 +415,6 @@ export default function AdminAISettingsPage() {
                       className="w-full px-2 py-1 border border-slate-200 rounded text-sm"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">
-                      Priorität
-                    </label>
-                    <input
-                      type="number"
-                      value={config.priority}
-                      onChange={(e) => handleSave(config, { priority: parseInt(e.target.value) })}
-                      disabled={isSaving}
-                      className="w-full px-2 py-1 border border-slate-200 rounded text-sm"
-                    />
-                  </div>
                   <div className="flex items-end">
                     <span className="text-xs text-slate-400">
                       Aktualisiert: {new Date(config.updated_at).toLocaleDateString('de-DE')}
@@ -341,10 +434,11 @@ export default function AdminAISettingsPage() {
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
         <h3 className="font-semibold text-blue-900 mb-2">💡 Hinweise</h3>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Primary wird zuerst versucht, bei Fehler kommen Fallbacks zum Einsatz</li>
-          <li>• Niedrigere Priorität = höhere Präferenz (0 = Primary)</li>
+          <li>• Provider #1 wird zuerst versucht, bei Fehler kommt #2, usw.</li>
+          <li>• Verwende die Pfeile um die Reihenfolge zu ändern</li>
           <li>• API Keys werden AES-256 verschlüsselt in der DB gespeichert</li>
-          <li>• Der Catalog Agent prüft jeden Sonntag um 03:00 UTC auf neue Modelle</li>
+          <li>• <strong>🤖 Catalog Agent:</strong> Der markierte Provider prüft wöchentlich auf neue Modelle</li>
+          <li>• Empfehlung: Gemini als Catalog Agent (kostenloses Kontingent)</li>
           <li>• Preise sind in USD pro 1.000 Tokens angegeben</li>
         </ul>
       </div>
