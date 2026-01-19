@@ -1,21 +1,63 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { PriceDisplay } from '@/components/ui/PriceDisplay'
 
 interface PurchaseCTAProps {
   analysisId: string
-  price?: string
+}
+
+interface PriceData {
+  regularPrice: number
+  currentPrice: number
+  campaignActive: boolean
+  campaignName: string | null
 }
 
 // Timeout for checkout API call (10 seconds)
 const CHECKOUT_TIMEOUT_MS = 10000
 
-export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps) {
+// Fallback price (29.99€)
+const FALLBACK_PRICE: PriceData = {
+  regularPrice: 2999,
+  currentPrice: 2999,
+  campaignActive: false,
+  campaignName: null,
+}
+
+export function PurchaseCTA({ analysisId }: PurchaseCTAProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [priceData, setPriceData] = useState<PriceData>(FALLBACK_PRICE)
+  const [isPriceLoading, setIsPriceLoading] = useState(true)
   const router = useRouter()
   const isSubmittingRef = useRef(false) // Prevent double-clicks
+
+  // Fetch dynamic price on mount
+  useEffect(() => {
+    async function fetchPrice() {
+      try {
+        const res = await fetch('/api/prices')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.analysis) {
+            setPriceData({
+              regularPrice: data.analysis.regularPrice,
+              currentPrice: data.analysis.currentPrice,
+              campaignActive: data.analysis.campaignActive,
+              campaignName: data.analysis.campaignName,
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch price:', err)
+      } finally {
+        setIsPriceLoading(false)
+      }
+    }
+    fetchPrice()
+  }, [])
 
   const handleCheckout = async () => {
     // FIX: Early return to prevent double-clicks
@@ -143,8 +185,21 @@ export function PurchaseCTA({ analysisId, price = '29,99€' }: PurchaseCTAProps
             </svg>
             Wird geladen...
           </span>
+        ) : isPriceLoading ? (
+          'Jetzt freischalten'
         ) : (
-          `Jetzt freischalten – ${price}`
+          <span className="flex items-center gap-2">
+            Jetzt freischalten –{' '}
+            <PriceDisplay
+              regularPrice={priceData.regularPrice}
+              currentPrice={priceData.currentPrice}
+              campaignActive={priceData.campaignActive}
+              campaignName={priceData.campaignName}
+              size="md"
+              showSavings={false}
+              className="inline-flex text-white"
+            />
+          </span>
         )}
       </button>
 
