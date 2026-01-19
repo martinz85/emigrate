@@ -1,6 +1,18 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { UserTable } from './UserTable'
 
+interface UserProfile {
+  id: string
+  email: string | null
+  full_name: string | null
+  created_at: string
+  subscription_tier: string
+}
+
+interface AnalysisCount {
+  user_id: string | null
+}
+
 export const metadata = {
   title: 'User-Verwaltung | Admin',
 }
@@ -20,18 +32,18 @@ export default async function UsersPage() {
     `)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(50) as { data: UserProfile[] | null, error: { message: string } | null }
 
   // Fetch analysis counts separately
   const { data: analysisCounts } = await supabase
     .from('analyses')
     .select('user_id')
-    .not('user_id', 'is', null)
+    .not('user_id', 'is', null) as { data: AnalysisCount[] | null }
 
   // Count analyses per user
   const countMap: Record<string, number> = {}
   analysisCounts?.forEach(a => {
-    countMap[a.user_id] = (countMap[a.user_id] || 0) + 1
+    if (a.user_id) countMap[a.user_id] = (countMap[a.user_id] || 0) + 1
   })
 
   const usersWithCounts = users?.map(user => ({

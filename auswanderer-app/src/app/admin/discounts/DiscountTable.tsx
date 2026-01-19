@@ -10,8 +10,9 @@ interface Discount {
   valid_from: string | null
   valid_until: string | null
   max_uses: number | null
-  current_uses: number
-  created_at: string
+  current_uses: number | null
+  created_at: string | null
+  created_by: string | null
 }
 
 interface DiscountTableProps {
@@ -30,7 +31,7 @@ export function DiscountTable({ discounts }: DiscountTableProps) {
     if (discount.valid_from && new Date(discount.valid_from) > now) {
       return { label: 'Geplant', color: 'bg-yellow-100 text-yellow-700' }
     }
-    if (discount.max_uses && discount.current_uses >= discount.max_uses) {
+    if (discount.max_uses && (discount.current_uses ?? 0) >= discount.max_uses) {
       return { label: 'Aufgebraucht', color: 'bg-slate-100 text-slate-600' }
     }
     return { label: 'Aktiv', color: 'bg-emerald-100 text-emerald-700' }
@@ -89,7 +90,7 @@ export function DiscountTable({ discounts }: DiscountTableProps) {
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-slate-600">
-                    {discount.current_uses}
+                    {discount.current_uses ?? 0}
                     {discount.max_uses ? ` / ${discount.max_uses}` : ' (unbegrenzt)'}
                   </span>
                 </td>

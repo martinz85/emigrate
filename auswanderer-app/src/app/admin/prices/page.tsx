@@ -1,6 +1,25 @@
 import { createClient } from '@/lib/supabase/server'
 import { PriceEditor } from './PriceEditor'
 
+interface PriceConfig {
+  id: string
+  product_key: string
+  product_name: string
+  product_description: string | null
+  regular_price: number
+  campaign_price: number | null
+  campaign_active: boolean
+  campaign_name: string | null
+  currency: string
+  stripe_price_id: string | null
+  stripe_campaign_price_id: string | null
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+  updated_by: string | null
+}
+
 export const metadata = {
   title: 'Preise | Admin',
 }
@@ -12,7 +31,7 @@ export default async function PricesPage() {
   const { data: prices, error } = await supabase
     .from('price_config')
     .select('*')
-    .order('sort_order', { ascending: true })
+    .order('sort_order', { ascending: true }) as { data: PriceConfig[] | null, error: unknown }
 
   if (error) {
     console.error('Error fetching prices:', error)

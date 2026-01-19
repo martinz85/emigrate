@@ -25,13 +25,13 @@ export default async function AdminLayout({
     .from('admin_users')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .single() as { data: { role: string } | null }
 
   if (!adminUser) {
     redirect('/dashboard')
   }
 
-  const role = adminUser.role as string
+  const role = adminUser.role
 
   return (
     <div className="min-h-screen bg-slate-100">
