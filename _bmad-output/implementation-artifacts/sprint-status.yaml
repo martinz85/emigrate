@@ -132,3 +132,26 @@ development_status:
   10-6-dashboard-analytics: done      # Revenue, conversions, stats ✅
   epic-10-retrospective: optional
 
+  # ============================================
+  # POST-MVP BACKLOG
+  # ============================================
+
+  # Epic 7: E-Book Integration (Post-MVP)
+  epic-7: backlog
+  7-1-ebook-landing-page: backlog
+  7-2-ebook-checkout: backlog
+  7-3-ebook-download: backlog
+
+  # Epic 8: PRO Subscription (Post-MVP)
+  epic-8: backlog
+  8-1-subscription-plans: backlog
+  8-2-subscription-checkout: backlog
+  8-3-subscription-management: backlog
+
+  # Epic 11: Technical Improvements (Post-MVP, from Code Reviews)
+  epic-11: backlog
+  11-1-audit-logs-persistence: backlog      # Persist audit logs to DB table for DSGVO compliance
+  11-2-newsletter-export-pagination: backlog # Pagination/streaming for large exports (>10k)
+  11-3-dynamic-pricing: backlog             # Load EXPECTED_AMOUNT from DB, support discount codes
+  11-4-stripe-coupon-integration: backlog   # Sync discount_codes with Stripe Coupons
+
