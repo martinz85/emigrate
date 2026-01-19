@@ -12,6 +12,7 @@ import type {
 } from '../types'
 
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+const API_TIMEOUT_MS = 60000 // 60 seconds timeout for AI API calls
 
 interface GeminiContent {
   role: 'user' | 'model'
@@ -66,78 +67,81 @@ export class GeminiAdapter implements AIAdapter {
 
     const url = `${GEMINI_API_BASE}/${this.model}:generateContent?key=${this.apiKey}`
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: request.system }],
-        },
-        contents,
-        generationConfig: {
-          maxOutputTokens: request.maxTokens || this.settings.maxTokens || 4096,
-          temperature: request.temperature ?? this.settings.temperature ?? 0.7,
-        },
-      }),
-    })
+    // Create abort controller for timeout
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS)
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Gemini API error (${response.status}): ${error}`)
-    }
-
-    const data: GeminiResponse = await response.json()
-
-    // Extract content from first candidate
-    const content = data.candidates[0]?.content?.parts
-      ?.map((p) => p.text)
-      .join('') || ''
-
-    // Calculate usage
-    const inputTokens = data.usageMetadata?.promptTokenCount || 0
-    const outputTokens = data.usageMetadata?.candidatesTokenCount || 0
-    const costUsd = this.calculateCost(inputTokens, outputTokens)
-
-    this.lastUsage = {
-      inputTokens,
-      outputTokens,
-      totalTokens: data.usageMetadata?.totalTokenCount || inputTokens + outputTokens,
-      costUsd,
-    }
-
-    const finishReason = data.candidates[0]?.finishReason
-    
-    return {
-      content,
-      usage: this.lastUsage,
-      model: this.model,
-      provider: this.provider,
-      finishReason: finishReason === 'MAX_TOKENS' ? 'length' : 'stop',
-    }
-  }
-
-  async healthCheck(): Promise<boolean> {
     try {
-      const url = `${GEMINI_API_BASE}/${this.model}:generateContent?key=${this.apiKey}`
-
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: 'Hi' }],
-            },
-          ],
+          systemInstruction: {
+            parts: [{ text: request.system }],
+          },
+          contents,
           generationConfig: {
-            maxOutputTokens: 10,
+            maxOutputTokens: request.maxTokens || this.settings.maxTokens || 4096,
+            temperature: request.temperature ?? this.settings.temperature ?? 0.7,
           },
         }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeout)
+
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`Gemini API error (${response.status}): ${error}`)
+      }
+
+      const data: GeminiResponse = await response.json()
+
+      // Extract content from first candidate
+      const content = data.candidates[0]?.content?.parts
+        ?.map((p) => p.text)
+        .join('') || ''
+
+      // Calculate usage
+      const inputTokens = data.usageMetadata?.promptTokenCount || 0
+      const outputTokens = data.usageMetadata?.candidatesTokenCount || 0
+      const costUsd = this.calculateCost(inputTokens, outputTokens)
+
+      this.lastUsage = {
+        inputTokens,
+        outputTokens,
+        totalTokens: data.usageMetadata?.totalTokenCount || inputTokens + outputTokens,
+        costUsd,
+      }
+
+      const finishReason = data.candidates[0]?.finishReason
+      
+      return {
+        content,
+        usage: this.lastUsage,
+        model: this.model,
+        provider: this.provider,
+        finishReason: finishReason === 'MAX_TOKENS' ? 'length' : 'stop',
+      }
+    } catch (error) {
+      clearTimeout(timeout)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Gemini API timeout after ${API_TIMEOUT_MS / 1000}s`)
+      }
+      throw error
+    }
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Use Models API endpoint (free, no token cost)
+      // https://ai.google.dev/api/models#method:-models.list
+      const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`
+
+      const response = await fetch(url, {
+        method: 'GET',
       })
 
       return response.ok

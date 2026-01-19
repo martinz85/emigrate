@@ -13,6 +13,7 @@ import type {
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 const ANTHROPIC_VERSION = '2023-06-01'
+const API_TIMEOUT_MS = 60000 // 60 seconds timeout for AI API calls
 
 interface ClaudeMessage {
   role: 'user' | 'assistant'
@@ -62,60 +63,11 @@ export class ClaudeAdapter implements AIAdapter {
       content: m.content,
     }))
 
-    const response = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
-        'anthropic-version': ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify({
-        model: this.model,
-        max_tokens: request.maxTokens || this.settings.maxTokens || 4096,
-        temperature: request.temperature ?? this.settings.temperature ?? 0.7,
-        system: request.system,
-        messages,
-      }),
-    })
+    // Create abort controller for timeout
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS)
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Claude API error (${response.status}): ${error}`)
-    }
-
-    const data: ClaudeResponse = await response.json()
-
-    // Extract text content
-    const content = data.content
-      .filter((c) => c.type === 'text')
-      .map((c) => c.text)
-      .join('')
-
-    // Calculate usage
-    const inputTokens = data.usage.input_tokens
-    const outputTokens = data.usage.output_tokens
-    const costUsd = this.calculateCost(inputTokens, outputTokens)
-
-    this.lastUsage = {
-      inputTokens,
-      outputTokens,
-      totalTokens: inputTokens + outputTokens,
-      costUsd,
-    }
-
-    return {
-      content,
-      usage: this.lastUsage,
-      model: data.model,
-      provider: this.provider,
-      requestId: data.id,
-      finishReason: data.stop_reason === 'max_tokens' ? 'length' : 'stop',
-    }
-  }
-
-  async healthCheck(): Promise<boolean> {
     try {
-      // Simple API call to verify key
       const response = await fetch(ANTHROPIC_API_URL, {
         method: 'POST',
         headers: {
@@ -125,9 +77,68 @@ export class ClaudeAdapter implements AIAdapter {
         },
         body: JSON.stringify({
           model: this.model,
-          max_tokens: 10,
-          messages: [{ role: 'user', content: 'Hi' }],
+          max_tokens: request.maxTokens || this.settings.maxTokens || 4096,
+          temperature: request.temperature ?? this.settings.temperature ?? 0.7,
+          system: request.system,
+          messages,
         }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeout)
+
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`Claude API error (${response.status}): ${error}`)
+      }
+
+      const data: ClaudeResponse = await response.json()
+
+      // Extract text content
+      const content = data.content
+        .filter((c) => c.type === 'text')
+        .map((c) => c.text)
+        .join('')
+
+      // Calculate usage
+      const inputTokens = data.usage.input_tokens
+      const outputTokens = data.usage.output_tokens
+      const costUsd = this.calculateCost(inputTokens, outputTokens)
+
+      this.lastUsage = {
+        inputTokens,
+        outputTokens,
+        totalTokens: inputTokens + outputTokens,
+        costUsd,
+      }
+
+      return {
+        content,
+        usage: this.lastUsage,
+        model: data.model,
+        provider: this.provider,
+        requestId: data.id,
+        finishReason: data.stop_reason === 'max_tokens' ? 'length' : 'stop',
+      }
+    } catch (error) {
+      clearTimeout(timeout)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Claude API timeout after ${API_TIMEOUT_MS / 1000}s`)
+      }
+      throw error
+    }
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Use Models API endpoint (free, no token cost)
+      // https://docs.anthropic.com/en/api/models-list
+      const response = await fetch('https://api.anthropic.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'x-api-key': this.apiKey,
+          'anthropic-version': ANTHROPIC_VERSION,
+        },
       })
 
       return response.ok
