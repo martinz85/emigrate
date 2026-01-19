@@ -7,14 +7,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { getSpecificAdapter } from '@/lib/ai/factory'
 import type { AIProvider } from '@/lib/ai/types'
 
 export async function POST(request: NextRequest) {
   try {
     // Check admin auth
-    const supabase = await createServerClient()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

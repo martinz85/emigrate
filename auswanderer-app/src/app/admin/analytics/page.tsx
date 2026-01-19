@@ -25,6 +25,10 @@ interface RevenueDaily {
   pro_subscriptions: number
   ebook_sales: number
   avg_order_value: number
+  // Revenue breakdown by product (optional, calculated)
+  analysis_revenue?: number
+  pro_revenue?: number
+  ebook_revenue?: number
 }
 
 interface CostsDaily {
