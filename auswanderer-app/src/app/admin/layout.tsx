@@ -31,9 +31,11 @@ export default async function AdminLayout({
     redirect('/dashboard')
   }
 
+  const role = adminUser.role as string
+
   return (
     <div className="min-h-screen bg-slate-100">
-      <AdminHeader user={user} role={adminUser.role} />
+      <AdminHeader user={user} role={role} />
       <div className="flex">
         <AdminSidebar />
         <main className="flex-1 p-6">
