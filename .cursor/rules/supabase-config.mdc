@@ -1,0 +1,200 @@
+---
+description: Supabase Database Configuration for Emigrate Project
+globs:
+  - "auswanderer-app/supabase/**"
+  - "auswanderer-app/src/lib/supabase/**"
+  - "auswanderer-app/src/app/api/**"
+  - "auswanderer-app/src/app/(auth)/**"
+  - "auswanderer-app/src/app/auth/**"
+alwaysApply: false
+---
+
+# Supabase Configuration - Emigrate Project
+
+## ⚠️ WICHTIG: IMMER ZUERST AUF DEV ARBEITEN!
+
+**Alle Agents MÜSSEN:**
+1. Immer zuerst auf **Emigrate_DEV** entwickeln und testen
+2. NIEMALS direkt auf PROD deployen ohne vorherigen DEV-Test
+3. Bei Datenbankänderungen: Zuerst Migration auf DEV, dann nach Review auf PROD
+
+---
+
+## Aktive Umgebungen
+
+| Umgebung | Projekt | Status |
+|----------|---------|--------|
+| **DEV** | Emigrate_DEV | ✅ Standard für Entwicklung |
+| **PROD** | Emigrate | 🔒 Nur nach DEV-Test |
+
+**Lokale `.env.local` zeigt auf: DEV (Emigrate_DEV)**
+
+---
+
+## DEV Environment (Emigrate_DEV) - STANDARD
+
+| Key | Value |
+|-----|-------|
+| Project Reference | `hkktofxvgrxfkaixcowm` |
+| Project URL | `https://hkktofxvgrxfkaixcowm.supabase.co` |
+| Dashboard | https://supabase.com/dashboard/project/hkktofxvgrxfkaixcowm |
+| SQL Editor | https://supabase.com/dashboard/project/hkktofxvgrxfkaixcowm/sql/new |
+
+**CLI für DEV:**
+```bash
+cd auswanderer-app
+export SUPABASE_ACCESS_TOKEN='sbp_77dfca3de7fe63a612a1a1d160d1f60acc272e37'
+npx supabase link --project-ref hkktofxvgrxfkaixcowm
+npx supabase db push
+```
+
+---
+
+## PROD Environment (Emigrate) - NUR NACH DEV-TEST
+
+| Key | Value |
+|-----|-------|
+| Project Reference | `kfcofscgtvootvsnneux` |
+| Project URL | `https://kfcofscgtvootvsnneux.supabase.co` |
+| Dashboard | https://supabase.com/dashboard/project/kfcofscgtvootvsnneux |
+
+**CLI für PROD (nur nach erfolgreichem DEV-Test!):**
+```bash
+cd auswanderer-app
+export SUPABASE_ACCESS_TOKEN='sbp_77dfca3de7fe63a612a1a1d160d1f60acc272e37'
+npx supabase link --project-ref kfcofscgtvootvsnneux
+npx supabase db push
+```
+
+---
+
+## Agent-Instruktionen
+
+### Für ALLE Agents
+
+1. **Datenbank-Änderungen**: Immer zuerst auf DEV testen
+2. **App starten**: `npm run dev` verwendet automatisch DEV
+3. **Browser-Tests**: Gegen `localhost:3000` (DEV-Datenbank)
+4. **Migrations**: Zuerst auf DEV deployen, User informieren für PROD-Deploy
+
+### Für Dev Agent
+
+- Bei Schema-Änderungen: Neue Migration-Datei in `supabase/migrations/`
+- Nach Migration: `npx supabase link --project-ref hkktofxvgrxfkaixcowm && npx supabase db push`
+- Am Ende der Story: User fragen ob PROD-Deploy gewünscht
+
+### Für SM Agent (Scrum Master)
+
+- Datenbankänderungen als Akzeptanzkriterium dokumentieren
+- Hinweis in Story: "Migration zuerst auf DEV testen"
+
+### Für Max (Legal Agent)
+
+- DSGVO: `deleted_at` Soft-Delete in `profiles` Tabelle
+- Alle sensiblen Daten haben RLS aktiviert
+
+---
+
+## Workflow: DEV → PROD
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  1. ENTWICKLUNG (DEV)                                   │
+│     - npm run dev                                       │
+│     - .env.local → Emigrate_DEV                         │
+│     - Alle Tests hier!                                  │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  2. MIGRATION AUF DEV                                   │
+│     - npx supabase link --project-ref hkktofxvgrxfkaixcowm │
+│     - npx supabase db push                              │
+│     - Funktioniert? → Weiter                            │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  3. CODE REVIEW                                         │
+│     - Alle Features getestet?                           │
+│     - Sicherheitsprüfung?                               │
+└────────────────────────┬────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  4. PROD DEPLOY (Nur nach Freigabe!)                    │
+│     - npx supabase link --project-ref kfcofscgtvootvsnneux │
+│     - npx supabase db push                              │
+│     - Vercel Deploy (PROD Env-Vars)                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Env-Dateien
+
+| Datei | Zweck | Supabase |
+|-------|-------|----------|
+| `.env.local` | Aktive lokale Umgebung | **DEV** |
+| `.env.development.local` | DEV-Config Backup | DEV |
+| `.env.production.local` | PROD-Config (nicht aktiv lokal) | PROD |
+
+**Um temporär mit PROD zu arbeiten:**
+```bash
+# VORSICHT - nur wenn nötig!
+cp .env.production.local .env.local
+
+# Zurück zu DEV:
+cp .env.development.local .env.local
+```
+
+---
+
+## Database Schema
+
+### Tabellen (identisch auf DEV und PROD)
+
+| Tabelle | Beschreibung |
+|---------|--------------|
+| `profiles` | User-Profile |
+| `analyses` | Analyse-Daten |
+| `admin_users` | Admin-Rollen |
+| `discount_codes` | Rabattcodes |
+| `newsletter_subscribers` | Newsletter |
+
+### Migrations
+
+```
+auswanderer-app/supabase/migrations/
+├── 001_initial_schema.sql
+└── 002_fix_rls_policies.sql
+```
+
+---
+
+## Code-Verwendung
+
+```typescript
+// Client-side (Browser)
+import { createClient } from '@/lib/supabase/client'
+const supabase = createClient()
+
+// Server-side (API Routes, Server Components)
+import { createClient } from '@/lib/supabase/server'
+const supabase = await createClient()
+
+// Admin (bypasses RLS)
+import { createAdminClient } from '@/lib/supabase/server'
+const supabase = createAdminClient()
+```
+
+---
+
+## CLI Access Token
+
+```
+SUPABASE_ACCESS_TOKEN=sbp_77dfca3de7fe63a612a1a1d160d1f60acc272e37
+```
+
+Gültig bis: ~2026-02-18
+Neuen Token: https://supabase.com/dashboard/account/tokens

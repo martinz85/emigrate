@@ -1,0 +1,9 @@
+/**
+ * Email Templates Barrel Export
+ */
+
+export { PurchaseConfirmationEmail } from './purchase-confirmation'
+export type { PurchaseConfirmationProps } from './purchase-confirmation'
+
+export { styles as emailStyles } from './base-styles'
+

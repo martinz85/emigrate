@@ -558,11 +558,37 @@ User Input → Store → API → Service → External
 
 | Service | Integration Point | Purpose | Status |
 |---------|-------------------|---------|--------|
-| Supabase | `lib/supabase/*` | DB, Auth, Storage | Epic 6 |
+| Supabase | `lib/supabase/*` | DB, Auth, Storage | ✅ Epic 6 |
 | Claude API | `lib/claude/*` | AI Analysis | ✅ MVP |
 | Stripe | `lib/stripe/*` | Payments | ✅ MVP |
 | Vercel | Deployment | Hosting, Edge | ✅ MVP |
 | Resend/Postmark | `lib/email/*` | Transaktions-E-Mails | Epic 9 (Pre-Launch) |
+
+**Supabase CLI Befehle (für alle BMAD Agents):**
+
+⚠️ **IMMER ZUERST AUF DEV ARBEITEN!**
+
+```bash
+cd auswanderer-app
+export SUPABASE_ACCESS_TOKEN='sbp_77dfca3de7fe63a612a1a1d160d1f60acc272e37'
+
+# 1. DEV (Standard für Entwicklung)
+npx supabase link --project-ref hkktofxvgrxfkaixcowm
+npx supabase db push
+
+# 2. PROD (nur nach erfolgreichem DEV-Test!)
+npx supabase link --project-ref kfcofscgtvootvsnneux
+npx supabase db push
+```
+
+| Umgebung | Project Ref | URL |
+|----------|-------------|-----|
+| **DEV** | `hkktofxvgrxfkaixcowm` | https://hkktofxvgrxfkaixcowm.supabase.co |
+| **PROD** | `kfcofscgtvootvsnneux` | https://kfcofscgtvootvsnneux.supabase.co |
+
+> **Wichtig:** Access Token läuft am ~2026-02-18 ab. Neuen Token erstellen unter: https://supabase.com/dashboard/account/tokens
+> Vollständige Konfiguration: `.cursor/rules/supabase-config.mdc`
+> Workflow-Regeln: `.cursor/rules/dev-workflow.mdc`
 
 **TODO (Epic 9 - Transaktions-E-Mails):**
 - E-Mail-Service Setup (empfohlen: Resend - einfache API, gute DX)

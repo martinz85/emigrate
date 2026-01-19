@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/server'
+import { sendEmail, PurchaseConfirmationEmail } from '@/lib/email'
 
 // Initialize Stripe with secret key
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -172,19 +173,48 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   console.log(`✅ Analysis ${analysisId} marked as paid in Supabase`)
 
-  // TODO: Send confirmation email (Epic 9 - Pre-Launch Required)
-  // See: _bmad-output/planning-artifacts/epics.md (Epic 9)
-  // Implementation:
-  // - Use Resend or Postmark for transactional emails
-  // - Email should contain: Analyse-Link, PDF-Download-Link, Kaufnachweis
-  // - DSGVO: Transaktions-Mails benoetigen kein Opt-in
-  //
-  // await sendPurchaseConfirmationEmail({
-  //   to: customerEmail,
-  //   analysisId,
-  //   downloadLink: `${baseUrl}/ergebnis/${analysisId}`,
-  //   pdfLink: `${baseUrl}/api/pdf/${analysisId}`,
-  //   purchaseDate: new Date(),
-  //   amount: amountTotal / 100,
-  // })
+  // Fetch analysis result for email content
+  const { data: analysis } = await supabase
+    .from('analyses')
+    .select('result')
+    .eq('id', analysisId)
+    .single()
+
+  const result = analysis?.result as {
+    topCountry?: string
+    matchPercentage?: number
+  } | null
+
+  // Send confirmation email (non-blocking)
+  if (customerEmail) {
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://auswanderer-plattform.de'
+      
+      await sendEmail({
+        to: customerEmail,
+        subject: 'Deine Auswanderer-Analyse ist bereit! 🎉',
+        react: PurchaseConfirmationEmail({
+          customerName: session.customer_details?.name || undefined,
+          customerEmail: customerEmail,
+          analysisId: analysisId,
+          topCountry: result?.topCountry || 'Dein Top-Land',
+          matchPercentage: result?.matchPercentage || 0,
+          purchaseDate: new Date().toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          }),
+          amount: `${(amountTotal! / 100).toFixed(2).replace('.', ',')} €`,
+          resultUrl: `${appUrl}/ergebnis/${analysisId}`,
+        }),
+      })
+      
+      console.log(`✅ Confirmation email sent for analysis ${analysisId}`)
+    } catch (emailError) {
+      // Log but don't fail the webhook - email is non-critical
+      console.error('Failed to send confirmation email:', emailError)
+    }
+  } else {
+    console.warn('No customer email available - skipping confirmation email')
+  }
 }

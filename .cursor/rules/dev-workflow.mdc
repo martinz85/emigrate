@@ -1,0 +1,74 @@
+---
+description: Development Workflow - DEV First Policy
+globs:
+alwaysApply: true
+---
+
+# Development Workflow - DEV First Policy
+
+## ⚠️ OBLIGATORISCH FÜR ALLE AGENTS
+
+### Regel 1: IMMER ZUERST AUF DEV
+
+Alle Entwicklung, Tests und Änderungen MÜSSEN zuerst auf der **DEV-Umgebung** durchgeführt werden.
+
+| Umgebung | Datenbank | Wann verwenden |
+|----------|-----------|----------------|
+| **DEV** | Emigrate_DEV | ✅ IMMER zuerst hier arbeiten |
+| **PROD** | Emigrate | 🔒 NUR nach erfolgreichem DEV-Test |
+
+### Regel 2: Lokale Entwicklung
+
+```bash
+cd auswanderer-app
+npm run dev
+```
+
+Die App verbindet sich automatisch mit **DEV** (über `.env.local`).
+
+### Regel 3: Datenbank-Migrationen
+
+**IMMER diese Reihenfolge:**
+
+1. Migration auf DEV deployen
+2. Testen
+3. User informieren für PROD-Deploy
+
+```bash
+# DEV (Standard)
+export SUPABASE_ACCESS_TOKEN='sbp_77dfca3de7fe63a612a1a1d160d1f60acc272e37'
+npx supabase link --project-ref hkktofxvgrxfkaixcowm
+npx supabase db push
+
+# PROD (nur nach DEV-Test!)
+npx supabase link --project-ref kfcofscgtvootvsnneux
+npx supabase db push
+```
+
+### Regel 4: Am Ende jeder Story
+
+Wenn Datenbankänderungen gemacht wurden:
+1. Bestätigen dass Migration auf DEV erfolgreich war
+2. User fragen: "Soll ich die Migration auch auf PROD deployen?"
+
+---
+
+## Quick Reference
+
+| Was | DEV | PROD |
+|-----|-----|------|
+| Project Ref | `hkktofxvgrxfkaixcowm` | `kfcofscgtvootvsnneux` |
+| URL | `https://hkktofxvgrxfkaixcowm.supabase.co` | `https://kfcofscgtvootvsnneux.supabase.co` |
+| Dashboard | [DEV Dashboard](https://supabase.com/dashboard/project/hkktofxvgrxfkaixcowm) | [PROD Dashboard](https://supabase.com/dashboard/project/kfcofscgtvootvsnneux) |
+
+---
+
+## Env-Dateien
+
+| Datei | Aktiv? | Zeigt auf |
+|-------|--------|-----------|
+| `.env.local` | ✅ Ja | **DEV** |
+| `.env.development.local` | Backup | DEV |
+| `.env.production.local` | Backup | PROD |
+
+**Vollständige Supabase-Konfiguration:** `.cursor/rules/supabase-config.mdc`

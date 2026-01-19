@@ -129,7 +129,5 @@ CREATE INDEX IF NOT EXISTS idx_analyses_session_id ON public.analyses(session_id
 -- Documentation comment
 -- ============================================
 COMMENT ON POLICY "Anonymous can view analyses by ID" ON public.analyses IS 
-  'Allows anonymous users to query analyses. The app code in ergebnis/[id]/page.tsx ' ||
-  'validates that the session_id cookie matches the analysis.session_id. ' ||
-  'This is secure because httpOnly cookies cannot be forged client-side.';
+  'Allows anonymous users to query analyses. The app code in ergebnis/[id]/page.tsx validates that the session_id cookie matches the analysis.session_id. This is secure because httpOnly cookies cannot be forged client-side.';
 
