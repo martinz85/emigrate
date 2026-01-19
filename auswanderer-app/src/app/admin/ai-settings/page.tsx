@@ -28,6 +28,12 @@ interface AIModel {
   is_deprecated: boolean
 }
 
+interface CatalogCheck {
+  checked_at: string
+  status: string
+  updates_found: number
+}
+
 const PROVIDERS: Record<string, { name: string; icon: string; color: string; bg: string }> = {
   claude: { name: 'Claude', icon: '🟣', color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' },
   openai: { name: 'OpenAI', icon: '🟢', color: 'text-green-600', bg: 'bg-green-50 border-green-200' },
@@ -45,9 +51,12 @@ export default function AdminAISettingsPage() {
   const [newApiKey, setNewApiKey] = useState('')
   const [testingProvider, setTestingProvider] = useState<string | null>(null)
   const [testResults, setTestResults] = useState<Record<string, 'success' | 'error' | null>>({})
+  const [lastCatalogCheck, setLastCatalogCheck] = useState<CatalogCheck | null>(null)
+  const [isCheckingCatalog, setIsCheckingCatalog] = useState(false)
 
   useEffect(() => {
     fetchSettings()
+    fetchCatalogStatus()
   }, [])
 
   const fetchSettings = async () => {
@@ -55,12 +64,39 @@ export default function AdminAISettingsPage() {
       const res = await fetch('/api/admin/ai-settings')
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Laden fehlgeschlagen')
-      setConfigs(data.configs || [])
+      
+      // Ensure unique priorities (fix duplicates)
+      const configsWithFixedPriorities = fixDuplicatePriorities(data.configs || [])
+      setConfigs(configsWithFixedPriorities)
       setModels(data.models || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Fehler beim Laden')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fixDuplicatePriorities = (configs: ProviderConfig[]): ProviderConfig[] => {
+    const sorted = [...configs].sort((a, b) => a.priority - b.priority)
+    const fixed: ProviderConfig[] = []
+    let nextPriority = 1
+    
+    for (const config of sorted) {
+      fixed.push({ ...config, priority: nextPriority })
+      nextPriority++
+    }
+    return fixed
+  }
+
+  const fetchCatalogStatus = async () => {
+    try {
+      const res = await fetch('/api/admin/ai-catalog')
+      const data = await res.json()
+      if (res.ok && data.lastCheck) {
+        setLastCatalogCheck(data.lastCheck)
+      }
+    } catch {
+      // Ignore errors
     }
   }
 
@@ -107,12 +143,39 @@ export default function AdminAISettingsPage() {
   }
 
   const handlePriorityChange = async (config: ProviderConfig, newPriority: number) => {
-    // Swap priorities with existing provider at that priority
+    // Find the provider currently at the new priority
     const existingAtPriority = configs.find(c => c.priority === newPriority && c.id !== config.id)
+    
+    // Swap: give the existing one our current priority
     if (existingAtPriority) {
       await handleSave(existingAtPriority, { priority: config.priority })
     }
     await handleSave(config, { priority: newPriority })
+  }
+
+  const handleSetCatalogAgent = async (config: ProviderConfig) => {
+    // First, remove catalog agent from all others
+    for (const c of configs) {
+      if (c.is_catalog_agent && c.id !== config.id) {
+        await handleSave(c, { is_catalog_agent: false })
+      }
+    }
+    // Set this one as catalog agent
+    await handleSave(config, { is_catalog_agent: true })
+  }
+
+  const handleRunCatalogCheck = async () => {
+    setIsCheckingCatalog(true)
+    try {
+      const res = await fetch('/api/admin/ai-catalog/check', { method: 'POST' })
+      if (res.ok) {
+        fetchCatalogStatus()
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setIsCheckingCatalog(false)
+    }
   }
 
   const getModelsForProvider = (provider: string) => {
@@ -120,6 +183,7 @@ export default function AdminAISettingsPage() {
   }
 
   const sortedConfigs = [...configs].sort((a, b) => a.priority - b.priority)
+  const catalogAgent = configs.find(c => c.is_catalog_agent)
 
   if (isLoading) {
     return (
@@ -163,7 +227,7 @@ export default function AdminAISettingsPage() {
                   : 'bg-slate-50 border-slate-200 opacity-60'
               }`}
             >
-              {/* Top Row: Priority, Name, Status, Toggle */}
+              {/* Top Row: Priority, Name, Catalog Badge, Test, Toggle */}
               <div className="flex items-center gap-4 mb-4">
                 {/* Priority Selector */}
                 <select
@@ -181,10 +245,31 @@ export default function AdminAISettingsPage() {
                 <div className="flex items-center gap-2 flex-1">
                   <span className="text-2xl">{provider.icon}</span>
                   <div>
-                    <h3 className={`font-semibold ${provider.color}`}>{provider.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className={`font-semibold ${provider.color}`}>{provider.name}</h3>
+                      {config.is_catalog_agent && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                          🤖 Catalog
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-500">{config.model}</p>
                   </div>
                 </div>
+
+                {/* Catalog Agent Button */}
+                <button
+                  onClick={() => handleSetCatalogAgent(config)}
+                  disabled={isSaving || !config.has_api_key}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    config.is_catalog_agent
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-white border border-slate-300 text-slate-500 hover:bg-slate-50'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                  title="Als Catalog Agent setzen (prüft wöchentlich auf neue Modelle)"
+                >
+                  🤖
+                </button>
 
                 {/* Test Button */}
                 <button
@@ -281,12 +366,42 @@ export default function AdminAISettingsPage() {
         })}
       </div>
 
+      {/* Catalog Agent Section */}
+      <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🤖</span>
+            <h3 className="font-semibold text-amber-800">Catalog Agent</h3>
+          </div>
+          <button
+            onClick={handleRunCatalogCheck}
+            disabled={isCheckingCatalog || !catalogAgent}
+            className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isCheckingCatalog ? 'Prüfe...' : 'Jetzt prüfen'}
+          </button>
+        </div>
+        <p className="text-sm text-amber-700 mb-3">
+          Der Catalog Agent prüft wöchentlich auf neue Modelle und Preisänderungen.
+        </p>
+        <div className="flex items-center gap-4 text-sm">
+          <span className="text-amber-600">
+            Aktiver Agent: <strong>{catalogAgent ? PROVIDERS[catalogAgent.provider]?.name : 'Keiner ausgewählt'}</strong>
+          </span>
+          {lastCatalogCheck && (
+            <span className="text-amber-600">
+              Letzter Check: {new Date(lastCatalogCheck.checked_at).toLocaleDateString('de-DE')}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Info */}
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-600">
         <p className="font-medium text-slate-700 mb-2">💡 So funktioniert's:</p>
         <ul className="space-y-1">
           <li>• <strong>#1</strong> wird zuerst versucht, bei Fehler kommt <strong>#2</strong>, usw.</li>
-          <li>• Aktiviere Provider mit dem Toggle rechts</li>
+          <li>• Klicke <strong>🤖</strong> um einen Provider als Catalog Agent zu setzen</li>
           <li>• Klicke <strong>Test</strong> um die Verbindung zu prüfen</li>
         </ul>
       </div>
