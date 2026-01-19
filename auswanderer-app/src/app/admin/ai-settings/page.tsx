@@ -45,6 +45,8 @@ export default function AdminAISettingsPage() {
   const [savingId, setSavingId] = useState<string | null>(null)
   const [editingApiKey, setEditingApiKey] = useState<string | null>(null)
   const [newApiKey, setNewApiKey] = useState('')
+  const [testingProvider, setTestingProvider] = useState<string | null>(null)
+  const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; testedAt: Date } | null>>({})
 
   useEffect(() => {
     fetchSettings()
@@ -109,6 +111,52 @@ export default function AdminAISettingsPage() {
 
   const formatCost = (cost: number) => {
     return `$${cost.toFixed(4)}/1K`
+  }
+
+  const handleTestConnection = async (config: ProviderConfig) => {
+    setTestingProvider(config.id)
+    setTestResults((prev) => ({ ...prev, [config.id]: null }))
+
+    try {
+      const res = await fetch('/api/admin/ai-settings/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: config.provider }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setTestResults((prev) => ({
+          ...prev,
+          [config.id]: {
+            success: false,
+            message: data.error || 'Verbindung fehlgeschlagen',
+            testedAt: new Date(),
+          },
+        }))
+      } else {
+        setTestResults((prev) => ({
+          ...prev,
+          [config.id]: {
+            success: true,
+            message: `✓ Verbindung OK (${data.latencyMs}ms)`,
+            testedAt: new Date(),
+          },
+        }))
+      }
+    } catch (err) {
+      setTestResults((prev) => ({
+        ...prev,
+        [config.id]: {
+          success: false,
+          message: err instanceof Error ? err.message : 'Netzwerkfehler',
+          testedAt: new Date(),
+        },
+      }))
+    } finally {
+      setTestingProvider(null)
+    }
   }
 
   if (isLoading) {
@@ -276,20 +324,62 @@ export default function AdminAISettingsPage() {
                   </div>
                 </div>
 
-                {/* Active Toggle */}
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.is_active}
-                    onChange={(e) => handleSave(config, { is_active: e.target.checked })}
-                    disabled={isSaving}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-primary-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
-                  <span className="ml-2 text-sm text-slate-600">
-                    {config.is_active ? 'Aktiv' : 'Inaktiv'}
-                  </span>
-                </label>
+                {/* Test Button & Active Toggle */}
+                <div className="flex items-center gap-3">
+                  {/* Test Connection Button */}
+                  <button
+                    onClick={() => handleTestConnection(config)}
+                    disabled={testingProvider === config.id || !config.has_api_key}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      testingProvider === config.id
+                        ? 'bg-slate-100 text-slate-400'
+                        : testResults[config.id]?.success
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : testResults[config.id]?.success === false
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title={!config.has_api_key ? 'Zuerst API Key konfigurieren' : 'Verbindung testen'}
+                  >
+                    {testingProvider === config.id ? (
+                      <span className="flex items-center gap-1">
+                        <span className="animate-spin">⟳</span> Test...
+                      </span>
+                    ) : testResults[config.id]?.success ? (
+                      '✓ OK'
+                    ) : testResults[config.id]?.success === false ? (
+                      '✗ Fehler'
+                    ) : (
+                      '🔌 Testen'
+                    )}
+                  </button>
+
+                  {/* Test Result Message */}
+                  {testResults[config.id] && (
+                    <span
+                      className={`text-xs ${
+                        testResults[config.id]?.success ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {testResults[config.id]?.message}
+                    </span>
+                  )}
+
+                  {/* Active Toggle */}
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={config.is_active}
+                      onChange={(e) => handleSave(config, { is_active: e.target.checked })}
+                      disabled={isSaving}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-primary-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all" />
+                    <span className="ml-2 text-sm text-slate-600">
+                      {config.is_active ? 'Aktiv' : 'Inaktiv'}
+                    </span>
+                  </label>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
