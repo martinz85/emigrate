@@ -102,13 +102,16 @@ export async function POST(request: NextRequest) {
 }
 
 // Payment configuration
-const STANDARD_AMOUNT = 2999 // 29,99€ in cents
+const FALLBACK_AMOUNT = 2999 // 29,99€ fallback if metadata missing
 const MINIMUM_AMOUNT = 100 // 1€ minimum (for discount edge cases)
 const EXPECTED_CURRENCY = 'eur'
 
 /**
  * Handle successful checkout completion
  * Validates payment details and updates Supabase
+ * 
+ * CRITICAL: Uses priceUsed from session.metadata for dynamic pricing support.
+ * This value is set at checkout creation time and represents the actual expected price.
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const analysisId = session.metadata?.analysisId
@@ -116,6 +119,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const amountTotal = session.amount_total
   const paymentStatus = session.payment_status
   const currency = session.currency
+  const product = session.metadata?.product
+  
+  // CRITICAL: Use price from metadata (set at checkout creation) for validation
+  // This supports dynamic pricing / campaigns
+  const expectedPrice = session.metadata?.priceUsed 
+    ? parseInt(session.metadata.priceUsed, 10) 
+    : FALLBACK_AMOUNT
 
   // Mask PII in production logs (DSGVO compliance)
   const maskedEmail = (() => {
@@ -134,8 +144,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log('=== Checkout Session Completed ===')
   console.log(`Session ID: ${session.id}`)
   console.log(`Analysis ID: ${analysisId}`)
+  console.log(`Product: ${product}`)
   console.log(`Customer Email: ${maskedEmail}`)
   console.log(`Amount: ${amountTotal ? amountTotal / 100 : 0} ${currency?.toUpperCase() || 'EUR'}`)
+  console.log(`Expected Price: ${expectedPrice / 100} EUR (from metadata)`)
   console.log(`Payment Status: ${paymentStatus}`)
   console.log('==================================')
 
@@ -145,21 +157,37 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     throw new Error(`Invalid payment status: ${paymentStatus}`)
   }
 
-  // Validate amount (prevent underpayment attacks)
-  // Allow discounted amounts but enforce minimum
+  // Validate product type
+  if (product !== 'analysis') {
+    console.error(`Invalid product type: ${product}`)
+    throw new Error(`Invalid product: ${product}`)
+  }
+
+  // Validate payment mode
+  if (session.mode !== 'payment') {
+    console.error(`Invalid payment mode: ${session.mode}`)
+    throw new Error(`Invalid payment mode: ${session.mode}`)
+  }
+
+  // Validate amount matches expected price from checkout creation
+  // This prevents underpayment attacks even with dynamic pricing
   if (!amountTotal || amountTotal < MINIMUM_AMOUNT) {
     console.error(`Amount too low: ${amountTotal}, minimum: ${MINIMUM_AMOUNT}`)
     throw new Error(`Payment amount too low: ${amountTotal}`)
   }
 
-  // If amount is less than standard, verify discount was applied
-  if (amountTotal < STANDARD_AMOUNT) {
-    const discountApplied = session.total_details?.amount_discount
-    if (!discountApplied || discountApplied <= 0) {
-      console.error(`Underpayment without discount: ${amountTotal}, expected: ${STANDARD_AMOUNT}`)
-      throw new Error(`Invalid payment amount without discount: ${amountTotal}`)
+  // CRITICAL: Validate against the price that was set at checkout creation
+  // Allow small tolerance for potential rounding (though shouldn't happen with cents)
+  if (amountTotal !== expectedPrice) {
+    // Check if discount was applied (explains difference)
+    const discountApplied = session.total_details?.amount_discount || 0
+    const amountBeforeDiscount = amountTotal + discountApplied
+    
+    if (amountBeforeDiscount !== expectedPrice) {
+      console.error(`Amount mismatch: paid ${amountTotal}, expected ${expectedPrice}, discount ${discountApplied}`)
+      throw new Error(`Invalid payment amount: ${amountTotal}, expected: ${expectedPrice}`)
     }
-    console.log(`Discount applied: ${discountApplied / 100}€`)
+    console.log(`Discount applied: ${discountApplied / 100}€ (original: ${expectedPrice / 100}€)`)
   }
 
   // Validate currency
