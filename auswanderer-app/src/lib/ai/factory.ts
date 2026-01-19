@@ -23,6 +23,11 @@ const CONFIG_CACHE_TTL = 60 * 1000
 // Cache for model costs
 let modelCostCache: Map<string, { input: number; output: number }> | null = null
 
+// Cache for health check results (5 minute TTL)
+// Key: provider:model, Value: { isHealthy: boolean, checkedAt: timestamp }
+const healthCheckCache = new Map<string, { isHealthy: boolean; checkedAt: number }>()
+const HEALTH_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
 /**
  * Get AI adapter with automatic fallback
  *
@@ -40,10 +45,30 @@ export async function getAIAdapter(): Promise<AIAdapter> {
 
   for (const config of configs) {
     try {
+      const cacheKey = `${config.provider}:${config.model}`
+      const cached = healthCheckCache.get(cacheKey)
+      
+      // Check if we have a recent successful health check
+      if (cached && Date.now() - cached.checkedAt < HEALTH_CACHE_TTL) {
+        if (cached.isHealthy) {
+          const adapter = await createAdapter(config)
+          console.log(`[AI] Using provider: ${config.provider} (${config.model}) [cached]`)
+          return adapter
+        } else {
+          // Skip this provider - it was unhealthy recently
+          errors.push(`${config.provider}: Health check failed (cached)`)
+          continue
+        }
+      }
+
       const adapter = await createAdapter(config)
 
-      // Health check
+      // Health check (only if not cached or cache expired)
       const isHealthy = await adapter.healthCheck()
+      
+      // Cache the result
+      healthCheckCache.set(cacheKey, { isHealthy, checkedAt: Date.now() })
+      
       if (isHealthy) {
         console.log(`[AI] Using provider: ${config.provider} (${config.model})`)
         return adapter
@@ -54,6 +79,10 @@ export async function getAIAdapter(): Promise<AIAdapter> {
       const message = error instanceof Error ? error.message : 'Unknown error'
       errors.push(`${config.provider}: ${message}`)
       console.warn(`[AI] Provider ${config.provider} failed:`, message)
+      
+      // Cache the failure
+      const cacheKey = `${config.provider}:${config.model}`
+      healthCheckCache.set(cacheKey, { isHealthy: false, checkedAt: Date.now() })
     }
   }
 

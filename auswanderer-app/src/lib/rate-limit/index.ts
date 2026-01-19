@@ -52,32 +52,73 @@ export interface Settings {
  * Uses daily salt so hashes change daily
  */
 export function hashIP(ip: string): string {
-  const salt = process.env.AUDIT_SALT || 'default-salt'
+  const salt = process.env.AUDIT_SALT
+  if (!salt) {
+    console.error('[Security] AUDIT_SALT environment variable is not set! IP hashing is compromised.')
+    // In production, throw to prevent weak hashing
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('AUDIT_SALT must be configured for DSGVO-compliant IP hashing')
+    }
+  }
   const dailySalt = new Date().toISOString().split('T')[0] // YYYY-MM-DD
   return crypto
     .createHash('sha256')
-    .update(ip + salt + dailySalt)
+    .update(ip + (salt || 'dev-fallback-salt') + dailySalt)
     .digest('hex')
     .substring(0, 32)
 }
 
 /**
  * Get client IP from request headers
+ * Uses multiple fallbacks for robustness
  */
 export function getClientIP(headers: Headers): string {
   // Check common headers for real IP (behind proxies)
+  // Priority order: cf-connecting-ip (Cloudflare) > x-forwarded-for > x-real-ip
+  
+  // Cloudflare provides the most reliable IP
+  const cfIP = headers.get('cf-connecting-ip')
+  if (cfIP && isValidIP(cfIP)) {
+    return cfIP.trim()
+  }
+  
+  // Standard proxy header (can contain multiple IPs)
   const forwarded = headers.get('x-forwarded-for')
   if (forwarded) {
-    return forwarded.split(',')[0].trim()
+    const firstIP = forwarded.split(',')[0].trim()
+    if (isValidIP(firstIP)) {
+      return firstIP
+    }
   }
   
+  // Nginx real IP
   const realIP = headers.get('x-real-ip')
-  if (realIP) {
-    return realIP
+  if (realIP && isValidIP(realIP)) {
+    return realIP.trim()
+  }
+
+  // Vercel provides true-client-ip
+  const trueClientIP = headers.get('true-client-ip')
+  if (trueClientIP && isValidIP(trueClientIP)) {
+    return trueClientIP.trim()
   }
   
-  // Fallback
-  return 'unknown'
+  // Fallback - generate a unique identifier to prevent shared rate limits
+  // This is less ideal but prevents over-blocking multiple users
+  console.warn('[RateLimit] Could not determine client IP, using session-based fallback')
+  return `no-ip-${Date.now()}`
+}
+
+/**
+ * Basic IP validation (IPv4 or IPv6)
+ */
+function isValidIP(ip: string): boolean {
+  if (!ip || ip === 'unknown' || ip === '::1' || ip === '127.0.0.1') {
+    // Localhost IPs are valid but we might want to handle them differently
+    return true
+  }
+  // Simple check: contains at least one dot (IPv4) or colon (IPv6)
+  return ip.includes('.') || ip.includes(':')
 }
 
 // ============================================
@@ -183,14 +224,15 @@ export async function checkRateLimits(
   }
 
   // Check session limit (if session exists)
+  // Note: Session limits are cumulative across all days, so we aggregate all counts
   if (sessionId) {
     const { data: sessionData } = await supabase
       .from('rate_limits')
       .select('count')
       .eq('identifier', `session:${sessionId}`)
-      .single()
 
-    const sessionCount = sessionData?.count || 0
+    // Sum all counts across all dates for this session
+    const sessionCount = sessionData?.reduce((sum, row) => sum + (row.count || 0), 0) || 0
     if (sessionCount >= settings.rateLimitSessionTotal) {
       return {
         allowed: false,

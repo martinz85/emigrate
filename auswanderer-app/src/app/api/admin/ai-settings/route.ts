@@ -112,7 +112,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate provider
-    const validProviders = ['claude', 'openai', 'gemini']
+    const validProviders = ['claude', 'openai', 'gemini', 'groq']
     if (provider && !validProviders.includes(provider)) {
       return NextResponse.json({ error: 'Ungültiger Provider' }, { status: 400 })
     }

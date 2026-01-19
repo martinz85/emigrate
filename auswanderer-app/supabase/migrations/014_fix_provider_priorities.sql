@@ -15,3 +15,4 @@ SET is_catalog_agent = true
 WHERE provider = 'claude'
 AND NOT EXISTS (SELECT 1 FROM ai_provider_config WHERE is_catalog_agent = true);
 
+

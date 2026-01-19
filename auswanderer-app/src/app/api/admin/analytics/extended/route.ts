@@ -87,7 +87,15 @@ export async function GET() {
       // Top referrers
       const referrerMap = new Map<string, number>()
       sessions.forEach(s => {
-        const referrer = s.referrer ? new URL(s.referrer).hostname : 'Direct'
+        let referrer = 'Direct'
+        if (s.referrer) {
+          try {
+            referrer = new URL(s.referrer).hostname
+          } catch {
+            // Invalid URL, use the raw string or mark as unknown
+            referrer = s.referrer.substring(0, 50) || 'Unknown'
+          }
+        }
         referrerMap.set(referrer, (referrerMap.get(referrer) || 0) + 1)
       })
       const topReferrers = Array.from(referrerMap.entries())
