@@ -61,9 +61,11 @@ export function PriceDisplay({
   showSavings = true,
   className = '',
 }: PriceDisplayProps) {
-  // Calculate savings
+  // Calculate savings (guard against divide-by-zero)
   const savings = regularPrice - currentPrice
-  const savingsPercent = Math.round((savings / regularPrice) * 100)
+  const savingsPercent = regularPrice > 0 
+    ? Math.round((savings / regularPrice) * 100) 
+    : 0
   const hasCampaign = campaignActive && savings > 0
 
   // No campaign or no savings - show regular price

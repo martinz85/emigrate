@@ -52,8 +52,8 @@ export async function PUT(
 
     // Validate prices
     if (regularPrice !== undefined) {
-      if (typeof regularPrice !== 'number' || regularPrice < 0) {
-        return NextResponse.json({ error: 'Ungültiger regulärer Preis' }, { status: 400 })
+      if (typeof regularPrice !== 'number' || regularPrice <= 0) {
+        return NextResponse.json({ error: 'Regulärer Preis muss größer als 0 sein' }, { status: 400 })
       }
     }
 

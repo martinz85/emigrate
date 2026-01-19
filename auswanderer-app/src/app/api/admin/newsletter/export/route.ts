@@ -104,10 +104,30 @@ export async function GET(request: NextRequest) {
   })
 }
 
+/**
+ * Escape CSV value to prevent formula injection and handle special chars.
+ * 
+ * Security: Prefixes dangerous characters (=, +, -, @, tab, carriage return)
+ * with a single quote to prevent Excel/Sheets formula injection.
+ * 
+ * @see https://owasp.org/www-community/attacks/CSV_Injection
+ */
 function escapeCSV(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`
+  if (!value) return ''
+  
+  let escaped = value
+  
+  // Prevent CSV formula injection: prefix dangerous leading chars with single quote
+  const dangerousChars = ['=', '+', '-', '@', '\t', '\r']
+  if (dangerousChars.some(char => escaped.startsWith(char))) {
+    escaped = "'" + escaped
   }
-  return value
+  
+  // Standard CSV escaping: wrap in quotes if contains comma, quote, or newline
+  if (escaped.includes(',') || escaped.includes('"') || escaped.includes('\n')) {
+    return `"${escaped.replace(/"/g, '""')}"`
+  }
+  
+  return escaped
 }
 
