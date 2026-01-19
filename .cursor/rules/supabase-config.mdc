@@ -40,12 +40,25 @@ alwaysApply: false
 | Dashboard | https://supabase.com/dashboard/project/hkktofxvgrxfkaixcowm |
 | SQL Editor | https://supabase.com/dashboard/project/hkktofxvgrxfkaixcowm/sql/new |
 
+**API Keys (DEV):**
+```
+NEXT_PUBLIC_SUPABASE_URL=https://hkktofxvgrxfkaixcowm.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhra3RvZnh2Z3J4ZmthaXhjb3dtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4MDI0MjIsImV4cCI6MjA4NDM3ODQyMn0.cZ-HNWr09HihiHXsDIEXbCfLlGPYAQVC18SAl5pQZYY
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhra3RvZnh2Z3J4ZmthaXhjb3dtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODgwMjQyMiwiZXhwIjoyMDg0Mzc4NDIyfQ.fMWxkaaeNmybN86Fq-vKpxyyZSzO_iwmzD_e783jZH4
+```
+
 **CLI für DEV:**
 ```bash
 cd auswanderer-app
 export SUPABASE_ACCESS_TOKEN='sbp_77dfca3de7fe63a612a1a1d160d1f60acc272e37'
 npx supabase link --project-ref hkktofxvgrxfkaixcowm
 npx supabase db push
+```
+
+**Admin Password Script:**
+```bash
+cd auswanderer-app
+SUPABASE_SERVICE_ROLE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhra3RvZnh2Z3J4ZmthaXhjb3dtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODgwMjQyMiwiZXhwIjoyMDg0Mzc4NDIyfQ.fMWxkaaeNmybN86Fq-vKpxyyZSzO_iwmzD_e783jZH4' node scripts/set-admin-password.mjs <email> <password>
 ```
 
 ---

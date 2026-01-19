@@ -16,7 +16,51 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ============================================
-  // PROTECTED ROUTES
+  // ADMIN LOGIN & RESET-PASSWORD
+  // These pages are PUBLIC (no auth required)
+  // ============================================
+  if (pathname === '/admin-login' || pathname === '/admin-reset-password') {
+    // If already logged in as admin, redirect to admin dashboard
+    if (user) {
+      const { data: adminUser } = await supabase
+        .from('admin_users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (adminUser) {
+        return NextResponse.redirect(new URL('/admin', request.url))
+      }
+    }
+    // Allow access to login/reset pages
+    return supabaseResponse
+  }
+
+  // ============================================
+  // ADMIN ROUTES (except login/reset)
+  // Require authentication + admin role
+  // ============================================
+  if (pathname.startsWith('/admin')) {
+    // Not logged in → redirect to admin login
+    if (!user) {
+      return NextResponse.redirect(new URL('/admin-login', request.url))
+    }
+
+    // Check admin role
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!adminUser) {
+      // Not an admin - redirect to dashboard with message
+      return NextResponse.redirect(new URL('/dashboard?error=no_admin_access', request.url))
+    }
+  }
+
+  // ============================================
+  // PROTECTED ROUTES (dashboard, etc.)
   // Require authentication
   // ============================================
   const protectedRoutes = ['/dashboard']
@@ -31,31 +75,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // ============================================
-  // ADMIN ROUTES
-  // Require authentication + admin role
-  // ============================================
-  if (pathname.startsWith('/admin')) {
-    if (!user) {
-      const redirectUrl = new URL('/login', request.url)
-      redirectUrl.searchParams.set('next', pathname)
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    // Check admin role
-    const { data: adminUser } = await supabase
-      .from('admin_users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!adminUser) {
-      // Not an admin - redirect to dashboard
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-  }
-
-  // ============================================
-  // LOGIN PAGE - Redirect if already logged in
+  // USER LOGIN PAGE - Redirect if already logged in
   // ============================================
   if (pathname === '/login' && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
