@@ -5,7 +5,7 @@ interface AdminCardProps {
   value: string | number
   subtitle?: string
   icon?: string
-  trend?: {
+  trend?: 'up' | 'down' | 'warning' | 'neutral' | {
     value: number
     label: string
   }
@@ -34,13 +34,21 @@ export function AdminCard({
           {subtitle && (
             <p className="text-sm text-slate-500 mt-1">{subtitle}</p>
           )}
-          {trend && (
+          {trend && typeof trend === 'object' && 'value' in trend && (
             <p className={cn(
               'text-sm font-medium mt-2',
               trend.value >= 0 ? 'text-emerald-600' : 'text-red-600'
             )}>
               {trend.value >= 0 ? '↑' : '↓'} {Math.abs(trend.value)}% {trend.label}
             </p>
+          )}
+          {trend && typeof trend === 'string' && trend !== 'neutral' && (
+            <span className={cn(
+              'inline-block mt-2 w-2 h-2 rounded-full',
+              trend === 'up' && 'bg-emerald-500',
+              trend === 'down' && 'bg-red-500',
+              trend === 'warning' && 'bg-amber-500'
+            )} />
           )}
         </div>
         {icon && (

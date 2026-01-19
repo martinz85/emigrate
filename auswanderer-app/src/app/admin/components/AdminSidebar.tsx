@@ -12,10 +12,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
+  { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
   { href: '/admin/users', label: 'User', icon: '👥' },
   { href: '/admin/prices', label: 'Preise', icon: '💰' },
   { href: '/admin/discounts', label: 'Rabattcodes', icon: '🎟️' },
   { href: '/admin/newsletter', label: 'Newsletter', icon: '📧' },
+  { href: '/admin/settings', label: 'Einstellungen', icon: '⚙️' },
 ]
 
 export function AdminSidebar() {
