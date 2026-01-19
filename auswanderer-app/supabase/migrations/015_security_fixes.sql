@@ -29,3 +29,5 @@ REVOKE EXECUTE ON FUNCTION public.get_today_global_count() FROM anon;
 -- Note: These functions are still accessible via service_role key (createAdminClient)
 -- which is used in API routes on the server side
 
+-- Additional security revokes are in migration 016
+

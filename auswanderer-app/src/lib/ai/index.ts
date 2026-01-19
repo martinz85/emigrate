@@ -47,5 +47,5 @@ export {
 } from './encryption'
 
 // Adapters (for direct use if needed)
-export { ClaudeAdapter, OpenAIAdapter, GeminiAdapter } from './adapters'
+export { ClaudeAdapter, OpenAIAdapter, GeminiAdapter, GroqAdapter } from './adapters'
 

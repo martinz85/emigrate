@@ -7,7 +7,6 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/server'
-import { hashIP } from '@/lib/rate-limit'
 
 // ============================================
 // TYPES

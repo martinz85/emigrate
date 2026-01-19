@@ -14,10 +14,11 @@ import { getSpecificAdapter } from './factory'
 import type { AIProvider, ModelUpdate, CatalogCheck } from './types'
 
 // Pricing page URLs
-const PRICING_URLS = {
+const PRICING_URLS: Partial<Record<AIProvider, string>> = {
   claude: 'https://www.anthropic.com/pricing',
   openai: 'https://openai.com/api/pricing',
   gemini: 'https://ai.google.dev/pricing',
+  groq: 'https://groq.com/pricing',
 }
 
 const CATALOG_AGENT_PROMPT = `Du bist ein Preisanalyse-Agent für AI-APIs. Deine Aufgabe ist es, Änderungen in AI-Modell-Katalogen zu identifizieren.
@@ -36,7 +37,7 @@ Antworte AUSSCHLIESSLICH im JSON-Format:
   "updates": [
     {
       "type": "new_model" | "price_change" | "deprecated",
-      "provider": "claude" | "openai" | "gemini",
+      "provider": "claude" | "openai" | "gemini" | "groq",
       "modelId": "claude-3-5-sonnet-20250115",
       "suggestedData": {
         "name": "Claude 3.5 Sonnet (January 2025)",

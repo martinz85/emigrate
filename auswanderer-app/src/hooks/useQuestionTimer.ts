@@ -101,9 +101,8 @@ export function useQuestionTimer(): UseQuestionTimerReturn {
   useEffect(() => {
     return () => {
       if (currentQuestion && startTimeRef.current) {
-        const duration = Date.now() - startTimeRef.current
-        // Can't update state here, but could send to analytics
-        console.log(`[Timer] Unmount - ${currentQuestion}: ${duration}ms`)
+        // Timer cleanup - state can't be updated here
+        // Analytics are already sent via endQuestion()
       }
     }
   }, [currentQuestion])

@@ -316,28 +316,17 @@ export async function incrementRateLimits(
     })
   }
 
-  // Update daily usage aggregates
-  const { error } = await supabase
-    .from('daily_usage')
-    .upsert({
-      date: today,
-      total_analyses: 1,
-      total_input_tokens: usage.inputTokens,
-      total_output_tokens: usage.outputTokens,
-      total_cost_usd: usage.costUsd,
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'date',
-    })
+  // Update daily usage aggregates using RPC for atomic increment
+  // Note: upsert would overwrite values, RPC does proper increment
+  const { error } = await supabase.rpc('increment_daily_usage', {
+    p_date: today,
+    p_input_tokens: usage.inputTokens,
+    p_output_tokens: usage.outputTokens,
+    p_cost: usage.costUsd,
+  })
 
   if (error) {
-    // If upsert failed, try raw update
-    await supabase.rpc('increment_daily_usage', {
-      p_date: today,
-      p_input_tokens: usage.inputTokens,
-      p_output_tokens: usage.outputTokens,
-      p_cost: usage.costUsd,
-    })
+    console.error('[RateLimit] Failed to increment daily usage:', error)
   }
 }
 
