@@ -50,6 +50,9 @@ export async function DELETE(
   const supabase = createAdminClient()
 
   try {
+    // DSGVO Art. 17: Complete data deletion in correct order
+    // Abort on any error to maintain data consistency
+
     // 1. Delete analyses
     const { error: analysesError } = await supabase
       .from('analyses')
@@ -58,9 +61,34 @@ export async function DELETE(
 
     if (analysesError) {
       console.error('Error deleting analyses:', analysesError)
+      return NextResponse.json(
+        { error: 'Analysen konnten nicht gelöscht werden. Löschung abgebrochen.' },
+        { status: 500 }
+      )
     }
 
-    // 2. Delete profile
+    // 2. Delete newsletter subscription (DSGVO: alle User-Daten löschen)
+    // Note: newsletter_subscribers may use email instead of user_id
+    // Fetch user email first for newsletter deletion
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single()
+
+    if (userProfile?.email) {
+      const { error: newsletterError } = await supabase
+        .from('newsletter_subscribers')
+        .delete()
+        .eq('email', userProfile.email)
+
+      if (newsletterError) {
+        console.error('Error deleting newsletter subscription:', newsletterError)
+        // Non-critical: continue with deletion but log warning
+      }
+    }
+
+    // 3. Delete profile
     const { error: profileError } = await supabase
       .from('profiles')
       .delete()
@@ -68,9 +96,13 @@ export async function DELETE(
 
     if (profileError) {
       console.error('Error deleting profile:', profileError)
+      return NextResponse.json(
+        { error: 'Profil konnte nicht gelöscht werden. Löschung abgebrochen.' },
+        { status: 500 }
+      )
     }
 
-    // 3. Delete auth user (requires admin client)
+    // 4. Delete auth user (requires admin client)
     const { error: authError } = await supabase.auth.admin.deleteUser(userId)
 
     if (authError) {
@@ -81,7 +113,7 @@ export async function DELETE(
       )
     }
 
-    // Audit log
+    // Audit log (TODO: Persist to audit_logs table for DSGVO compliance)
     console.log(`[AUDIT] User ${userId} deleted by admin ${currentUser.id} at ${new Date().toISOString()}`)
 
     return NextResponse.json({ success: true })

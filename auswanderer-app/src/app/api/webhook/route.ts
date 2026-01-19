@@ -117,11 +117,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const currency = session.currency
 
   // Mask PII in production logs (DSGVO compliance)
-  const maskedEmail = customerEmail 
-    ? (process.env.NODE_ENV === 'production' 
-        ? `${customerEmail.substring(0, 2)}***@***` 
-        : customerEmail)
-    : 'N/A'
+  const maskedEmail = (() => {
+    if (!customerEmail) return 'N/A'
+    if (process.env.NODE_ENV !== 'production') return customerEmail
+    
+    const [local, domain] = customerEmail.split('@')
+    if (!local || !domain) return '***@***'
+    
+    const maskedLocal = local.substring(0, 2) + '***'
+    const domainParts = domain.split('.')
+    const maskedDomain = '***.' + (domainParts[domainParts.length - 1] || 'com')
+    return `${maskedLocal}@${maskedDomain}`
+  })()
 
   console.log('=== Checkout Session Completed ===')
   console.log(`Session ID: ${session.id}`)

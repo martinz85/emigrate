@@ -35,6 +35,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Rabatt muss zwischen 1-100% sein' }, { status: 400 })
     }
 
+    // Validate date formats
+    if (validFrom && isNaN(Date.parse(validFrom))) {
+      return NextResponse.json({ error: 'Ungültiges Startdatum' }, { status: 400 })
+    }
+
+    if (validUntil && isNaN(Date.parse(validUntil))) {
+      return NextResponse.json({ error: 'Ungültiges Enddatum' }, { status: 400 })
+    }
+
+    // Validate date logic
+    if (validFrom && validUntil && new Date(validFrom) >= new Date(validUntil)) {
+      return NextResponse.json({ error: 'Startdatum muss vor Enddatum liegen' }, { status: 400 })
+    }
+
+    // Validate maxUses
+    if (maxUses !== null && maxUses !== undefined && (typeof maxUses !== 'number' || maxUses < 1)) {
+      return NextResponse.json({ error: 'Max. Nutzungen muss mindestens 1 sein' }, { status: 400 })
+    }
+
     const supabase = createAdminClient()
 
     // Check if code already exists

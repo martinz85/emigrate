@@ -56,7 +56,19 @@ export async function GET(
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
-    // Compile export data
+    // Fetch newsletter subscription (DSGVO Art. 20: all user data)
+    let newsletterSubscription = null
+    if (profile?.email) {
+      const { data: newsletter } = await supabase
+        .from('newsletter_subscribers')
+        .select('email, source, opted_in_at, language')
+        .eq('email', profile.email)
+        .single()
+      
+      newsletterSubscription = newsletter || null
+    }
+
+    // Compile export data (DSGVO Art. 20: complete data portability)
     const exportData = {
       exportedAt: new Date().toISOString(),
       exportedBy: 'admin',
@@ -76,9 +88,11 @@ export async function GET(
         ratings: a.ratings,
         result: a.result,
       })) || [],
+      newsletterSubscription: newsletterSubscription,
       metadata: {
         totalAnalyses: analyses?.length || 0,
         paidAnalyses: analyses?.filter(a => a.paid).length || 0,
+        hasNewsletterSubscription: !!newsletterSubscription,
       },
     }
 
