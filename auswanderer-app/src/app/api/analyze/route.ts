@@ -67,18 +67,22 @@ export async function POST(request: NextRequest) {
       .from('analyses')
       .insert(analysisData)
 
+    let storageWarning: string | undefined
+
     if (insertError) {
       console.error('Failed to store analysis:', insertError)
-      // Don't fail the request - analysis was successful, just storage failed
-      // In production, you might want to queue this for retry
+      // Analysis was successful but storage failed
+      // Return success but with warning - user can still see result but may not be able to retrieve later
+      storageWarning = 'Analyse erstellt, aber Speicherung fehlgeschlagen. Bei Problemen bitte erneut starten.'
     } else {
       console.log(`Analysis ${analysisId} stored in Supabase`)
     }
 
-    // Create response
+    // Create response with optional warning
     const response = NextResponse.json({
       success: true,
       analysisId,
+      ...(storageWarning && { warning: storageWarning, storageError: true }),
       ...analysisResult,
     })
 
