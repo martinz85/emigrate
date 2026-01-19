@@ -1,4 +1,18 @@
-// PDF Generation for Emigration Analysis Reports
+/**
+ * PDF Generation for Emigration Analysis Reports
+ * 
+ * ⚠️ SECURITY WARNING:
+ * The generatePreviewHtml() function interpolates user data directly into HTML.
+ * This is XSS-vulnerable if the HTML is ever rendered in a browser context.
+ * 
+ * Current status: This function is NOT used in production.
+ * The PDF API (/api/pdf/[id]) uses generateTextReport() instead.
+ * 
+ * Before using generatePreviewHtml() in production:
+ * 1. Implement proper HTML escaping (e.g., using a sanitizer library)
+ * 2. Or use a template engine with auto-escaping (e.g., React server components)
+ * 3. Or generate PDF directly without HTML intermediate (e.g., @react-pdf/renderer)
+ */
 
 import { AnalysisResult, CountryScore } from './claude'
 

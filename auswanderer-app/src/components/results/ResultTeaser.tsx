@@ -31,7 +31,7 @@ export function ResultTeaser({ analysisId, result }: ResultTeaserProps) {
       {/* Success Badge */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium">
-          <span className="text-xl">🎉</span>
+          <span className="text-xl" aria-hidden="true">🎉</span>
           Deine Analyse ist fertig!
         </div>
       </div>
@@ -77,8 +77,9 @@ export function ResultTeaser({ analysisId, result }: ResultTeaserProps) {
                     {ranking.rank}
                   </div>
                   <div className="flex-1">
-                    <span className="text-slate-400 font-medium" aria-label="Land versteckt">
-                      🔒 Versteckt
+                    <span className="text-slate-400 font-medium">
+                      <span aria-hidden="true">🔒 </span>
+                      <span>Versteckt</span>
                     </span>
                   </div>
                   <div className="text-right">
