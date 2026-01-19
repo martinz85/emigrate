@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { analyzeEmigration, type AnalysisRequest } from '@/lib/claude/analyze'
+import { analyzeEmigration, type AnalysisRequest } from '@/lib/ai'
 import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { randomUUID } from 'crypto'

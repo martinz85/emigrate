@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
   { href: '/admin/prices', label: 'Preise', icon: '💰' },
   { href: '/admin/discounts', label: 'Rabattcodes', icon: '🎟️' },
   { href: '/admin/newsletter', label: 'Newsletter', icon: '📧' },
+  { href: '/admin/ai-settings', label: 'AI-Provider', icon: '🤖' },
   { href: '/admin/settings', label: 'Einstellungen', icon: '⚙️' },
 ]
 
