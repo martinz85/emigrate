@@ -231,6 +231,30 @@ Martin - der Gruender - ist selbst zweimal ausgewandert: Als 3-Jaehriger von Pol
 - [ ] FAQ
 - [ ] CTA zur AI-Analyse
 
+#### 5.1.9 Admin Dashboard (Pre-Launch Required)
+
+**Beschreibung:** Internes Dashboard fuer Plattform-Management und DSGVO-Compliance.
+
+**Akzeptanzkriterien:**
+- [ ] Geschuetzter Admin-Bereich (`/admin`) mit Rollenkonzept
+- [ ] User-Verwaltung (Liste, Details, Loeschen)
+- [ ] DSGVO Art. 17: User-Loeschung auf Anfrage
+- [ ] DSGVO Art. 20: Daten-Export fuer User
+- [ ] Preis-Verwaltung mit Stripe-Sync
+- [ ] Rabattcode-Erstellung und -Verwaltung
+- [ ] Newsletter-Export (CSV/JSON) fuer externe Tools (Odoo, Mailchimp)
+- [ ] Basis-Analytics (Umsatz, Conversions, Top-Laender)
+
+**Datenbank-Anforderungen:**
+- `admin_users` Tabelle mit Rollen
+- `discount_codes` Tabelle fuer Kampagnen
+- `newsletter_subscribers` Tabelle
+- Soft-Delete (`deleted_at`) fuer DSGVO-konforme Loeschung
+
+**Technische Notizen:**
+- Abhaengigkeit: Epic 6 (Supabase) muss zuerst implementiert sein
+- Siehe: Epic 10 in epics.md
+
 ### 5.2 Post-MVP Features (Monat 2-3)
 
 #### 5.2.1 Auswanderer PRO Subscription (14,99 EUR/Monat)

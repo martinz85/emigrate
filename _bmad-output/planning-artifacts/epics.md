@@ -185,6 +185,91 @@ User erhalten E-Mail-Benachrichtigungen nach Kauf.
 - Muss vor Launch implementiert werden (siehe launch-checklist.md)
 - Abhängigkeit: Epic 6 (Supabase) sollte zuerst fertig sein für User-Daten
 
+### Epic 10: Admin Dashboard (Pre-Launch Required)
+Administratoren können User, Preise und Kampagnen verwalten.
+**FRs covered:** DSGVO-Compliance, Business Operations
+
+**Stories:**
+- Story 10.1: Admin-Authentifizierung & Rollenkonzept
+  - Admin-Role in Supabase
+  - Geschützter `/admin` Route
+  - Nur autorisierte Benutzer (z.B. martin@...)
+
+- Story 10.2: User-Verwaltung (DSGVO-Pflicht)
+  - User-Liste mit Suche/Filter
+  - User-Details anzeigen (Analysen, Käufe)
+  - User löschen (DSGVO Art. 17 "Recht auf Löschung")
+  - Daten-Export für User (DSGVO Art. 20 "Datenportabilität")
+
+- Story 10.3: Preis-Verwaltung
+  - Analyse-Preis ändern (aktuell 29,99€)
+  - PRO-Abo-Preis ändern (14,99€/Monat)
+  - E-Book-Preise verwalten
+  - Stripe-Sync (Preise werden in Stripe aktualisiert)
+
+- Story 10.4: Kampagnen & Rabattcodes
+  - Rabattcode erstellen (z.B. LAUNCH20 = 20% off)
+  - Kampagnen-Zeitraum festlegen
+  - Nutzungsstatistik pro Code
+
+- Story 10.5: Newsletter & CRM-Export
+  - User-Liste exportieren (CSV, JSON)
+  - Filter: Nur Newsletter-Opt-in, Käufer, PRO-User
+  - Schnittstelle/Webhook für externe Tools (Odoo, Mailchimp, etc.)
+  - Manueller Newsletter-Versand (oder Integration mit Resend)
+
+- Story 10.6: Dashboard & Analytics
+  - Umsatz-Übersicht (heute, Woche, Monat)
+  - Conversion-Rate (Analysen → Käufe)
+  - Top-Länder Statistik
+  - Aktive PRO-Abos
+
+**Datenbank-Tabellen (Supabase):**
+```sql
+-- Admin-spezifische Tabellen
+CREATE TABLE admin_users (
+  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  role TEXT NOT NULL DEFAULT 'admin', -- 'admin', 'super_admin'
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE discount_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT UNIQUE NOT NULL,
+  discount_percent INTEGER NOT NULL,
+  valid_from TIMESTAMPTZ,
+  valid_until TIMESTAMPTZ,
+  max_uses INTEGER,
+  current_uses INTEGER DEFAULT 0,
+  created_by UUID REFERENCES admin_users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE newsletter_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  user_id UUID REFERENCES auth.users(id),
+  opted_in_at TIMESTAMPTZ DEFAULT NOW(),
+  source TEXT, -- 'signup', 'purchase', 'landing'
+  unsubscribed_at TIMESTAMPTZ
+);
+
+-- Ergänzung zu users Tabelle
+ALTER TABLE users ADD COLUMN 
+  newsletter_opt_in BOOLEAN DEFAULT FALSE,
+  deleted_at TIMESTAMPTZ, -- Soft-Delete für DSGVO
+  deletion_requested_at TIMESTAMPTZ;
+```
+
+**Abhängigkeiten:**
+- Epic 6 (Supabase) MUSS zuerst fertig sein
+- Stripe Dashboard für Preis-Sync
+
+**Technologie:**
+- Next.js Admin-Route mit Middleware-Protection
+- Supabase Row Level Security (RLS) für Admin-Zugriff
+- Recharts oder Tremor für Dashboard-Charts
+
 ---
 
 ## Epic 1: Foundation & Landing

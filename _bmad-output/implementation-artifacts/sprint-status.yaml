@@ -99,10 +99,20 @@ development_status:
   epic-6-retrospective: optional
 
   # Epic 9: Transaktions-E-Mails (Pre-Launch Required)
-  # NOTE: Epic 7 & 8 are Post-MVP, Epic 9 is required before Launch
+  # NOTE: Epic 7 & 8 are Post-MVP, Epic 9 & 10 are required before Launch
   epic-9: backlog
   9-1-email-service-setup: backlog       # Resend/Postmark integration
   9-2-purchase-confirmation-email: backlog  # After successful Stripe payment
   9-3-pdf-download-link-email: backlog   # Optional, can be combined with 9-2
   epic-9-retrospective: optional
+
+  # Epic 10: Admin Dashboard (Pre-Launch Required - DSGVO Compliance)
+  epic-10: backlog
+  10-1-admin-auth-roles: backlog         # Admin role in Supabase, protected routes
+  10-2-user-management: backlog          # DSGVO: User deletion, data export
+  10-3-price-management: backlog         # Stripe price sync
+  10-4-discount-codes: backlog           # Campaigns and promo codes
+  10-5-newsletter-export: backlog        # CSV/JSON export, Odoo/Mailchimp integration
+  10-6-dashboard-analytics: backlog      # Revenue, conversions, stats
+  epic-10-retrospective: optional
 

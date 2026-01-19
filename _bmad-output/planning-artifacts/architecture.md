@@ -570,6 +570,41 @@ User Input → Store → API → Service → External
 - PDF-Download-Link in E-Mail
 - Integration im Stripe Webhook (`handleCheckoutCompleted`)
 
+**TODO (Epic 10 - Admin Dashboard):**
+
+Admin-Bereich für Plattform-Management (DSGVO-Pflicht + Business Operations)
+
+*Datenbank-Schema (Supabase):*
+```
+admin_users         - Admin-Rollen (admin, super_admin)
+discount_codes      - Rabattcodes und Kampagnen
+newsletter_subscribers - Opt-in Newsletter-Liste
+users.newsletter_opt_in - Boolean für Export-Filter
+users.deleted_at    - Soft-Delete für DSGVO
+```
+
+*API-Routen:*
+```
+/admin              - Dashboard (geschützt)
+/api/admin/users    - CRUD für User-Verwaltung
+/api/admin/prices   - Preis-Management (Stripe-Sync)
+/api/admin/discounts - Rabattcode-Verwaltung
+/api/admin/export   - CSV/JSON Export für Newsletter-Tools
+/api/admin/stats    - Analytics-Daten
+```
+
+*Integrationen:*
+| Integration | Zweck | Methode |
+|-------------|-------|---------|
+| Stripe | Preis-Sync | API |
+| Odoo/Mailchimp | Newsletter | CSV-Export oder Webhook |
+| Resend | Manueller Newsletter | API |
+
+*Technologie:*
+- Middleware-basierter Auth-Check für `/admin/*`
+- Supabase RLS Policies für Admin-Rolle
+- Recharts oder Tremor für Dashboard-Charts
+
 ---
 
 ## Architecture Validation Results
