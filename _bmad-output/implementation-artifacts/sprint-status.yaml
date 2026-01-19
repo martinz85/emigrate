@@ -82,18 +82,27 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: PDF Generation & Reveal
-  epic-5: in-progress
-  5-1-land-reveal-animation: ready-for-dev
-  5-2-pdf-template: ready-for-dev
-  5-3-pdf-generator-api: ready-for-dev
-  5-4-pdf-download-button: ready-for-dev
+  epic-5: done
+  5-1-land-reveal-animation: done
+  5-2-pdf-template: done
+  5-3-pdf-generator-api: done
+  5-4-pdf-download-button: done
   epic-5-retrospective: optional
 
-  # Epic 6: User Authentication
+  # Epic 6: User Authentication (Supabase)
   epic-6: backlog
   6-1-supabase-auth-setup: backlog
   6-2-login-page: backlog
   6-3-auth-middleware: backlog
   6-4-user-profile-storage: backlog
+  6-5-payment-verification: backlog  # Fixes security: URL-param unlock bypass
   epic-6-retrospective: optional
+
+  # Epic 9: Transaktions-E-Mails (Pre-Launch Required)
+  # NOTE: Epic 7 & 8 are Post-MVP, Epic 9 is required before Launch
+  epic-9: backlog
+  9-1-email-service-setup: backlog       # Resend/Postmark integration
+  9-2-purchase-confirmation-email: backlog  # After successful Stripe payment
+  9-3-pdf-download-link-email: backlog   # Optional, can be combined with 9-2
+  epic-9-retrospective: optional
 

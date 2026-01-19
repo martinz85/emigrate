@@ -156,7 +156,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // This would:
   // 1. Mark the analysis as "paid" in the database
   // 2. Store the purchase record
-  // 3. Optionally send a confirmation email
+  
+  // TODO: Send confirmation email (Epic 9 - Pre-Launch Required)
+  // See: _bmad-output/planning-artifacts/epics.md (Epic 9)
+  // Implementation:
+  // - Use Resend or Postmark for transactional emails
+  // - Email should contain: Analyse-Link, PDF-Download-Link, Kaufnachweis
+  // - DSGVO: Transaktions-Mails benoetigen kein Opt-in
+  //
+  // await sendPurchaseConfirmationEmail({
+  //   to: customerEmail,
+  //   analysisId,
+  //   downloadLink: `${baseUrl}/ergebnis/${analysisId}?unlocked=true`,
+  //   pdfLink: `${baseUrl}/api/pdf/${analysisId}`,
+  //   purchaseDate: new Date(),
+  //   amount: amountTotal / 100,
+  // })
   
   /*
   const supabase = createClient(

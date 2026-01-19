@@ -183,7 +183,22 @@ Martin - der Gruender - ist selbst zweimal ausgewandert: Als 3-Jaehriger von Pol
 - [ ] Automatische Rechnungsstellung
 - [ ] Stornierung/Kuendigung Self-Service
 
-#### 5.1.5 Mobile-Responsive Design
+#### 5.1.5 Transaktions-E-Mails (Pre-Launch Required)
+
+**Beschreibung:** Automatische E-Mail-Benachrichtigungen nach Kauf.
+
+**Akzeptanzkriterien:**
+- [ ] Kaufbestaetigung per E-Mail nach erfolgreicher Zahlung
+- [ ] E-Mail enthaelt: Analyse-Link, PDF-Download-Link, Kaufnachweis
+- [ ] DSGVO-konform (Transaktions-Mails benoetigen kein Opt-in)
+- [ ] Service: Resend oder Postmark
+
+**Technische Notizen:**
+- Integration im Stripe Webhook (`handleCheckoutCompleted`)
+- Abhaengigkeit: Epic 6 (Supabase) fuer User-Daten
+- Siehe: Epic 9 in epics.md, launch-checklist.md
+
+#### 5.1.6 Mobile-Responsive Design
 
 **Beschreibung:** Vollstaendig nutzbar auf allen Geraeten.
 
@@ -193,7 +208,7 @@ Martin - der Gruender - ist selbst zweimal ausgewandert: Als 3-Jaehriger von Pol
 - [ ] Google Mobile-Friendly Test bestanden
 - [ ] Keine horizontalen Scrollbars
 
-#### 5.1.6 SEO-Grundoptimierung
+#### 5.1.7 SEO-Grundoptimierung
 
 **Beschreibung:** Technische SEO-Basis fuer organisches Wachstum.
 
@@ -204,7 +219,7 @@ Martin - der Gruender - ist selbst zweimal ausgewandert: Als 3-Jaehriger von Pol
 - [ ] Core Web Vitals im "Good" Bereich
 - [ ] Semantisches HTML
 
-#### 5.1.7 Landing Page mit Gruender-Story
+#### 5.1.8 Landing Page mit Gruender-Story
 
 **Beschreibung:** Ueberzeugende Landing Page die Vertrauen aufbaut.
 

@@ -556,12 +556,19 @@ User Input → Store → API → Service → External
 
 **External Services:**
 
-| Service | Integration Point | Purpose |
-|---------|-------------------|---------|
-| Supabase | `lib/supabase/*` | DB, Auth, Storage |
-| Claude API | `lib/claude/*` | AI Analysis |
-| Stripe | `lib/stripe/*` | Payments |
-| Vercel | Deployment | Hosting, Edge |
+| Service | Integration Point | Purpose | Status |
+|---------|-------------------|---------|--------|
+| Supabase | `lib/supabase/*` | DB, Auth, Storage | Epic 6 |
+| Claude API | `lib/claude/*` | AI Analysis | ✅ MVP |
+| Stripe | `lib/stripe/*` | Payments | ✅ MVP |
+| Vercel | Deployment | Hosting, Edge | ✅ MVP |
+| Resend/Postmark | `lib/email/*` | Transaktions-E-Mails | Epic 9 (Pre-Launch) |
+
+**TODO (Epic 9 - Transaktions-E-Mails):**
+- E-Mail-Service Setup (empfohlen: Resend - einfache API, gute DX)
+- Kaufbestätigung nach erfolgreicher Zahlung
+- PDF-Download-Link in E-Mail
+- Integration im Stripe Webhook (`handleCheckoutCompleted`)
 
 ---
 

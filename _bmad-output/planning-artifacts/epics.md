@@ -173,6 +173,18 @@ PRO User haben ein Dashboard mit Analyse-Historie und Abo-Verwaltung.
 User können E-Books kaufen und herunterladen.
 **FRs covered:** FR10
 
+### Epic 9: Transaktions-E-Mails (Pre-Launch)
+User erhalten E-Mail-Benachrichtigungen nach Kauf.
+**Stories:**
+- Story 9.1: E-Mail-Service Setup (Resend/Postmark)
+- Story 9.2: Kaufbestätigungs-E-Mail
+- Story 9.3: PDF-Download-Link E-Mail (optional, kann in 9.2 integriert sein)
+
+**Notizen:**
+- Rechtlich: Transaktions-Mails benötigen kein Opt-in (DSGVO)
+- Muss vor Launch implementiert werden (siehe launch-checklist.md)
+- Abhängigkeit: Epic 6 (Supabase) sollte zuerst fertig sein für User-Daten
+
 ---
 
 ## Epic 1: Foundation & Landing
