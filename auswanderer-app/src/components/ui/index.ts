@@ -6,3 +6,6 @@ export { Dialog, DialogPortal, DialogOverlay, DialogTrigger, DialogClose, Dialog
 export { Progress } from './progress'
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip'
 
+// Custom components
+export { PriceDisplay, PriceDisplayCompact } from './PriceDisplay'
+

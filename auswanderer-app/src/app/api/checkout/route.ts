@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { createClient } from '@/lib/supabase/server'
 
 // Initialize Stripe with secret key
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -17,12 +18,50 @@ const getBaseUrl = () => {
   return 'http://localhost:3000'
 }
 
-// Product configuration
-const ANALYSIS_PRODUCT = {
+// Fallback product configuration (used if DB not available)
+const DEFAULT_ANALYSIS_PRODUCT = {
   name: 'Auswanderungs-Analyse',
   description: 'Deine personalisierte Länderempfehlung mit detaillierter Analyse',
   price: 2999, // 29,99€ in cents
   currency: 'eur',
+}
+
+/**
+ * Fetch current price from database with fallback
+ */
+async function getProductPrice(productKey: string = 'analysis') {
+  try {
+    const supabase = await createClient()
+    
+    const { data, error } = await supabase
+      .from('price_config')
+      .select('product_name, product_description, regular_price, campaign_price, campaign_active, currency')
+      .eq('product_key', productKey)
+      .eq('is_active', true)
+      .single()
+
+    if (error || !data) {
+      console.warn('Price config not found, using default:', error?.message)
+      return DEFAULT_ANALYSIS_PRODUCT
+    }
+
+    // Use campaign price if active, otherwise regular price
+    const activePrice = data.campaign_active && data.campaign_price 
+      ? data.campaign_price 
+      : data.regular_price
+
+    return {
+      name: data.product_name || DEFAULT_ANALYSIS_PRODUCT.name,
+      description: data.product_description || DEFAULT_ANALYSIS_PRODUCT.description,
+      price: activePrice,
+      regularPrice: data.regular_price,
+      currency: data.currency || 'eur',
+      isCampaign: data.campaign_active && data.campaign_price !== null,
+    }
+  } catch (err) {
+    console.error('Error fetching price config:', err)
+    return DEFAULT_ANALYSIS_PRODUCT
+  }
 }
 
 // Validate analysisId format (UUID or simple ID)
@@ -55,6 +94,11 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = getBaseUrl()
 
+    // Fetch current price from database
+    const productConfig = await getProductPrice('analysis')
+    
+    console.log(`Checkout: Using price ${productConfig.price / 100}€ (campaign: ${(productConfig as { isCampaign?: boolean }).isCampaign || false})`)
+
     // CRITICAL: Block mock mode in production
     if (!stripe) {
       if (process.env.NODE_ENV === 'production') {
@@ -72,33 +116,33 @@ export async function POST(request: NextRequest) {
         url: `${baseUrl}/checkout/success?session_id=${mockSessionId}&analysisId=${encodeURIComponent(analysisId)}`,
         sessionId: mockSessionId,
         mock: true,
+        price: productConfig.price,
       })
     }
 
-    // Create Stripe Checkout Session
-    // Include analysisId in success_url for immediate access (avoids extra API call)
+    // Create Stripe Checkout Session with dynamic price
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency: ANALYSIS_PRODUCT.currency,
+            currency: productConfig.currency,
             product_data: {
-              name: ANALYSIS_PRODUCT.name,
-              description: ANALYSIS_PRODUCT.description,
+              name: productConfig.name,
+              description: productConfig.description,
             },
-            unit_amount: ANALYSIS_PRODUCT.price,
+            unit_amount: productConfig.price,
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      // FIX: Include analysisId in success_url for robustness
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&analysisId=${encodeURIComponent(analysisId)}`,
       cancel_url: `${baseUrl}/ergebnis/${encodeURIComponent(analysisId)}`,
       metadata: {
         analysisId,
         product: 'analysis',
+        priceUsed: String(productConfig.price), // Track which price was used
       },
     })
 
@@ -180,17 +224,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // FIX: Validate amount matches expected price (prevent underpayment attacks)
-    if (session.amount_total !== ANALYSIS_PRODUCT.price) {
-      console.error(`Invalid amount in session verification: ${session.amount_total}, expected: ${ANALYSIS_PRODUCT.price}`)
+    // Validate amount - use price stored in metadata (dynamic pricing support)
+    const expectedPrice = session.metadata?.priceUsed 
+      ? parseInt(session.metadata.priceUsed, 10) 
+      : DEFAULT_ANALYSIS_PRODUCT.price
+    
+    if (session.amount_total !== expectedPrice) {
+      console.error(`Invalid amount in session verification: ${session.amount_total}, expected: ${expectedPrice}`)
       return NextResponse.json(
         { error: 'Ungültiger Zahlungsbetrag' },
         { status: 400 }
       )
     }
 
-    // FIX: Validate currency
-    if (session.currency?.toLowerCase() !== ANALYSIS_PRODUCT.currency) {
+    // Validate currency
+    if (session.currency?.toLowerCase() !== 'eur') {
       console.error(`Invalid currency in session verification: ${session.currency}`)
       return NextResponse.json(
         { error: 'Ungültige Währung' },

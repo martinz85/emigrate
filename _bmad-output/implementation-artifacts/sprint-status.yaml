@@ -155,3 +155,7 @@ development_status:
   11-3-dynamic-pricing: done             # Support discount codes in webhook ✅
   11-4-stripe-coupon-integration: done   # Sync with Stripe Coupons ✅
 
+  # Epic 12: Price Campaign Management
+  epic-12: done
+  12-1-price-campaign-management: done  # DB-synced price campaigns with strikethrough display ✅
+
