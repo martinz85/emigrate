@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAnalysisStore } from '@/stores'
 import { CRITERIA } from '@/lib/criteria'
+import { useQuestionTimer, useSessionTimer } from '@/hooks'
 import { WelcomeScreen } from './WelcomeScreen'
 import { PreAnalysisForm } from './PreAnalysisForm'
 import { QuestionCard } from './QuestionCard'
@@ -16,6 +17,11 @@ export function AnalysisFlow() {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const analyticsSessionId = useRef<string | null>(null)
+  
+  // Question timing for analytics
+  const { startQuestion, endQuestion, questionTimes, averageTime, totalTime } = useQuestionTimer()
+  const { duration: sessionDuration } = useSessionTimer()
   
   const {
     currentStep,
@@ -33,6 +39,35 @@ export function AnalysisFlow() {
     setIsHydrated(true)
   }, [])
 
+  // Start analytics session on mount
+  useEffect(() => {
+    const startAnalyticsSession = async () => {
+      try {
+        const res = await fetch('/api/analytics/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'start',
+            data: {
+              landingPage: window.location.pathname,
+              url: window.location.href,
+              screenWidth: window.innerWidth,
+              screenHeight: window.innerHeight,
+            },
+          }),
+        })
+        const data = await res.json()
+        if (data.analyticsSessionId) {
+          analyticsSessionId.current = data.analyticsSessionId
+        }
+      } catch (err) {
+        // Analytics failure should not block the user
+        console.warn('[Analytics] Failed to start session:', err)
+      }
+    }
+    startAnalyticsSession()
+  }, [])
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -45,6 +80,13 @@ export function AnalysisFlow() {
   const currentCriterion = CRITERIA[currentCriterionIndex]
   const totalCriteria = CRITERIA.length
   const isLastQuestion = currentCriterionIndex >= totalCriteria - 1
+
+  // Start timing current question when it changes
+  useEffect(() => {
+    if (currentStep === 'criteria' && currentCriterion) {
+      startQuestion(currentCriterion.id)
+    }
+  }, [currentStep, currentCriterion, startQuestion])
 
   const handleStartAnalysis = useCallback(() => {
     setStep('pre-analysis')
@@ -64,6 +106,23 @@ export function AnalysisFlow() {
     try {
       const { preAnalysis, ratings } = useAnalysisStore.getState()
       
+      // Send analytics update with question times
+      if (analyticsSessionId.current) {
+        fetch('/api/analytics/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update',
+            data: {
+              questionsAnswered: Object.keys(ratings).length,
+              questionTimes,
+              isCompleted: true,
+              countriesOfInterest: preAnalysis.countriesOfInterest,
+            },
+          }),
+        }).catch(() => {}) // Fire and forget
+      }
+      
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,6 +138,24 @@ export function AnalysisFlow() {
 
       const data = await response.json()
       
+      // Update analytics with analysis result
+      if (analyticsSessionId.current && data.analysisId) {
+        fetch('/api/analytics/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update',
+            data: {
+              analysisId: data.analysisId,
+              topCountry: data.topCountry,
+              topCountryPercentage: data.topCountryPercentage,
+              aiProvider: data.aiProvider,
+              aiModel: data.aiModel,
+            },
+          }),
+        }).catch(() => {}) // Fire and forget
+      }
+      
       // Navigate to results page
       router.push(`/ergebnis/${data.analysisId}`)
     } catch (err) {
@@ -88,11 +165,14 @@ export function AnalysisFlow() {
       setIsSubmitting(false)
       setLoading(false)
     }
-  }, [router, setLoading, setStep, isSubmitting])
+  }, [router, setLoading, setStep, isSubmitting, questionTimes])
 
   const handleRate = useCallback(
     (rating: number) => {
       if (isSubmitting) return // Prevent interaction during submit
+      
+      // End timing for current question
+      endQuestion(currentCriterion.id)
       
       setRating(currentCriterion.id, rating)
 
@@ -115,7 +195,7 @@ export function AnalysisFlow() {
         }
       }, 300)
     },
-    [currentCriterion, nextCriterion, setRating, setStep, submitAnalysis, isSubmitting]
+    [currentCriterion, nextCriterion, setRating, setStep, submitAnalysis, isSubmitting, endQuestion]
   )
 
   const handleBack = useCallback(() => {
