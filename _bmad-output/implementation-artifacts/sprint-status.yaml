@@ -139,14 +139,14 @@ development_status:
   # Epic 7: E-Book Integration (Post-MVP)
   epic-7: in-progress
   7-1-ebook-landing-page: ready-for-dev    # ✅ Story created by Bob (SM)
-  7-2-ebook-checkout: backlog
-  7-3-ebook-download: backlog
+  7-2-ebook-checkout: ready-for-dev        # ✅ Story created by Bob (SM)
+  7-3-ebook-download: ready-for-dev        # ✅ Story created by Bob (SM)
 
   # Epic 8: PRO Subscription (Post-MVP)
   epic-8: in-progress
   8-1-subscription-plans: ready-for-dev    # ✅ Story created by Bob (SM)
-  8-2-subscription-checkout: backlog
-  8-3-subscription-management: backlog
+  8-2-subscription-checkout: ready-for-dev # ✅ Story created by Bob (SM)
+  8-3-subscription-management: ready-for-dev # ✅ Story created by Bob (SM)
 
   # Epic 11: Technical Improvements (Post-MVP, from Code Reviews)
   epic-11: done
