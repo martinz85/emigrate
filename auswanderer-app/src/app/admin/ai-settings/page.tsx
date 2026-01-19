@@ -371,7 +371,7 @@ export default function AdminAISettingsPage() {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">🤖</span>
-            <h3 className="font-semibold text-amber-800">Catalog Agent</h3>
+            <h3 className="font-semibold text-amber-800">Catalog Agent & Modell-Übersicht</h3>
           </div>
           <button
             onClick={handleRunCatalogCheck}
@@ -381,18 +381,83 @@ export default function AdminAISettingsPage() {
             {isCheckingCatalog ? 'Prüfe...' : 'Jetzt prüfen'}
           </button>
         </div>
-        <p className="text-sm text-amber-700 mb-3">
-          Der Catalog Agent prüft wöchentlich auf neue Modelle und Preisänderungen.
-        </p>
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-amber-600">
-            Aktiver Agent: <strong>{catalogAgent ? PROVIDERS[catalogAgent.provider]?.name : 'Keiner ausgewählt'}</strong>
+        
+        {/* Status Row */}
+        <div className="flex items-center gap-4 text-sm mb-4 pb-4 border-b border-amber-200">
+          <span className="text-amber-700">
+            Agent: <strong>{catalogAgent ? PROVIDERS[catalogAgent.provider]?.name : 'Keiner'}</strong>
           </span>
-          {lastCatalogCheck && (
-            <span className="text-amber-600">
-              Letzter Check: {new Date(lastCatalogCheck.checked_at).toLocaleDateString('de-DE')}
-            </span>
-          )}
+          <span className="text-amber-600">
+            Letzter Check: {lastCatalogCheck?.checked_at ? new Date(lastCatalogCheck.checked_at).toLocaleDateString('de-DE') : 'Noch nie'}
+          </span>
+          <span className="text-amber-600">
+            Modelle: <strong>{models.length}</strong>
+          </span>
+        </div>
+
+        {/* Models Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-amber-700 border-b border-amber-200">
+                <th className="pb-2 font-medium">Provider</th>
+                <th className="pb-2 font-medium">Modell</th>
+                <th className="pb-2 font-medium text-right">Input/1K</th>
+                <th className="pb-2 font-medium text-right">Output/1K</th>
+                <th className="pb-2 font-medium text-right">Max Tokens</th>
+                <th className="pb-2 font-medium text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody className="text-amber-800">
+              {models
+                .filter(m => !m.is_deprecated)
+                .sort((a, b) => {
+                  // Sort by provider, then by is_latest
+                  if (a.provider !== b.provider) {
+                    const order = ['claude', 'openai', 'gemini', 'groq']
+                    return order.indexOf(a.provider) - order.indexOf(b.provider)
+                  }
+                  return b.is_latest ? 1 : -1
+                })
+                .map((model) => {
+                  const providerInfo = PROVIDERS[model.provider]
+                  const isActive = configs.some(c => c.model === model.id && c.is_active)
+                  
+                  return (
+                    <tr key={model.id} className="border-b border-amber-100 last:border-0">
+                      <td className="py-2">
+                        <span className="flex items-center gap-1">
+                          <span>{providerInfo?.icon}</span>
+                          <span className="text-xs text-amber-600">{providerInfo?.name}</span>
+                        </span>
+                      </td>
+                      <td className="py-2">
+                        <span className="flex items-center gap-1">
+                          {model.name}
+                          {model.is_latest && <span className="text-amber-500">⭐</span>}
+                        </span>
+                      </td>
+                      <td className="py-2 text-right font-mono text-xs">
+                        ${model.input_cost_per_1k.toFixed(4)}
+                      </td>
+                      <td className="py-2 text-right font-mono text-xs">
+                        ${model.output_cost_per_1k.toFixed(4)}
+                      </td>
+                      <td className="py-2 text-right font-mono text-xs">
+                        {model.max_tokens.toLocaleString()}
+                      </td>
+                      <td className="py-2 text-center">
+                        {isActive ? (
+                          <span className="inline-block w-2 h-2 bg-green-500 rounded-full" title="Aktiv" />
+                        ) : (
+                          <span className="inline-block w-2 h-2 bg-slate-300 rounded-full" title="Inaktiv" />
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -402,7 +467,7 @@ export default function AdminAISettingsPage() {
         <ul className="space-y-1">
           <li>• <strong>#1</strong> wird zuerst versucht, bei Fehler kommt <strong>#2</strong>, usw.</li>
           <li>• Klicke <strong>🤖</strong> um einen Provider als Catalog Agent zu setzen</li>
-          <li>• Klicke <strong>Test</strong> um die Verbindung zu prüfen</li>
+          <li>• <strong>⭐</strong> = Neuestes Modell, <span className="inline-block w-2 h-2 bg-green-500 rounded-full" /> = Aktiv ausgewählt</li>
         </ul>
       </div>
     </div>
