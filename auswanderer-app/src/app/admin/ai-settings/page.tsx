@@ -260,7 +260,7 @@ export default function AdminAISettingsPage() {
                 {/* Catalog Agent Button */}
                 <button
                   onClick={() => handleSetCatalogAgent(config)}
-                  disabled={isSaving || !config.has_api_key}
+                  disabled={isSaving}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     config.is_catalog_agent
                       ? 'bg-amber-500 text-white'
