@@ -2,7 +2,7 @@
 story_id: "8.1"
 title: "Subscription Plans"
 epic: "Epic 8 - PRO Subscription"
-status: ready-for-dev
+status: review
 created: 2026-01-19
 created_by: Bob (SM)
 priority: high

@@ -2,7 +2,7 @@
 story_id: "7.1"
 title: "E-Book Landing Page"
 epic: "Epic 7 - E-Book Integration"
-status: ready-for-dev
+status: review
 created: 2026-01-19
 created_by: Bob (SM)
 priority: high

@@ -1,7 +1,8 @@
 // E-book Components
 // Export all ebook components from this barrel file
 
-export {}
+export { EbookCard } from './EbookCard'
+export { EbookGrid } from './EbookGrid'
 
 
 
