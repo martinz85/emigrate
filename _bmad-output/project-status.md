@@ -43,8 +43,21 @@
 
 ## Aktuelle Agent-Session
 
-**Aktiver Agent:** 📋 Product Manager (John)
-**Nächste Aktion:** Implementation bereit - Dev Agent aktivieren
+**Aktiver Agent:** 🏃 Scrum Master (Bob) oder 💻 Developer (Amelia)
+**Status:** MVP abgeschlossen, Post-MVP Epics (7, 8) bereit für Implementation
+
+### Verfügbare Agents
+
+| Agent | Datei | Aufgabe |
+|-------|-------|---------|
+| Bob (SM) | `.cursor/rules/agents/bob-scrum-master.mdc` | Story-Vorbereitung, Sprint-Planung |
+| Amelia (Dev) | `.cursor/rules/agents/amelia-developer.mdc` | Story-Implementierung |
+
+### Nächste Schritte
+
+1. **Bob (SM)** aktivieren → Story 7.1 erstellen
+2. **Amelia (Dev)** aktivieren → Story 7.1 implementieren
+3. Wiederholen für alle Stories in Epic 7, dann Epic 8
 
 ---
 

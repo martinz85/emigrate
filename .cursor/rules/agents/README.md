@@ -1,8 +1,15 @@
-# Business Agents - Auswanderer-Plattform
+# Agents - Auswanderer-Plattform
 
-Diese Agents sind spezialisierte AI-Assistenten für verschiedene Business-Funktionen.
+Diese Agents sind spezialisierte AI-Assistenten für verschiedene Funktionen.
 
-## Verfügbare Agents
+## Development Agents (BMAD)
+
+| Agent | Name | Rolle | Aktivierung |
+|-------|------|-------|-------------|
+| 🏃 Scrum Master | **Bob** | Story-Vorbereitung, Sprint-Planung | `@bob-scrum-master` |
+| 💻 Developer | **Amelia** | Story-Implementierung, Code | `@amelia-developer` |
+
+## Business Agents
 
 | Agent | Name | Rolle | Aktivierung |
 |-------|------|-------|-------------|
@@ -15,22 +22,28 @@ Diese Agents sind spezialisierte AI-Assistenten für verschiedene Business-Funkt
 ## Org-Chart
 
 ```
-                    ┌─────────────┐
-                    │   Steve     │
-                    │    CEO      │
-                    └──────┬──────┘
-                           │
-         ┌─────────────────┼─────────────────┐
-         │                 │                 │
-   ┌─────┴─────┐    ┌─────┴─────┐    ┌─────┴─────┐
-   │   Elma    │    │  Julian   │    │  Linus    │
-   │ Marketing │    │ SEO/CRO   │    │Controller │
-   └───────────┘    └───────────┘    └─────┬─────┘
-                                           │
-                                    ┌──────┴──────┐
-                                    │    Max      │
-                                    │   Legal     │
-                                    └─────────────┘
+                          ┌─────────────┐
+                          │   Steve     │
+                          │    CEO      │
+                          └──────┬──────┘
+                                 │
+           ┌─────────────────────┼─────────────────────┐
+           │                     │                     │
+     ┌─────┴─────┐        ┌─────┴─────┐        ┌─────┴─────┐
+     │   Elma    │        │  Julian   │        │  Linus    │
+     │ Marketing │        │ SEO/CRO   │        │Controller │
+     └───────────┘        └───────────┘        └─────┬─────┘
+                                                     │
+                                              ┌──────┴──────┐
+                                              │    Max      │
+                                              │   Legal     │
+                                              └─────────────┘
+
+Development Team (BMAD):
+     ┌───────────┐        ┌───────────┐
+     │    Bob    │───────▶│  Amelia   │
+     │    SM     │ Story  │    Dev    │
+     └───────────┘        └───────────┘
 ```
 
 ## Verwendung
@@ -90,6 +103,12 @@ Meine Empfehlung als CEO:
 ## Wartung
 
 Die Agent-Definitionen befinden sich in `.cursor/rules/agents/`:
+
+**Development (BMAD):**
+- `bob-scrum-master.mdc` → referenziert `_bmad/bmm/agents/sm.md`
+- `amelia-developer.mdc` → referenziert `_bmad/bmm/agents/dev.md`
+
+**Business:**
 - `steve-ceo.mdc`
 - `elma-marketing.mdc`
 - `julian-seo-conversion.mdc`
