@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
-import { logAuditEvent } from '@/lib/audit'
+import { logAuditEvent, pseudonymizeEmail } from '@/lib/audit'
 
 /**
  * Admin API: Delete User (DSGVO Art. 17)
@@ -125,14 +125,14 @@ export async function DELETE(
       )
     }
 
-    // Persist audit log (DSGVO compliance)
+    // Persist audit log (DSGVO compliance - email pseudonymized)
     await logAuditEvent({
       action: 'USER_DELETED',
       targetId: userId,
       targetType: 'user',
       adminId: currentUser.id,
       metadata: { 
-        userEmail: userProfile?.email ? '***' : null, // Don't store PII
+        userPseudonym: userProfile?.email ? pseudonymizeEmail(userProfile.email) : null,
         reason: 'DSGVO Art. 17 request',
       },
     })

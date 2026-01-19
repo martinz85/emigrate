@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient, createClient } from '@/lib/supabase/server'
-import { logAuditEvent } from '@/lib/audit'
+import { logAuditEvent, pseudonymizeEmail } from '@/lib/audit'
 
 /**
  * Admin API: Export User Data (DSGVO Art. 20)
@@ -97,13 +97,16 @@ export async function GET(
       },
     }
 
-    // Persist audit log (DSGVO compliance)
+    // Persist audit log (DSGVO compliance - email pseudonymized)
     await logAuditEvent({
       action: 'USER_EXPORTED',
       targetId: userId,
       targetType: 'user',
       adminId: currentUser.id,
-      metadata: { reason: 'DSGVO Art. 20 request' },
+      metadata: { 
+        userPseudonym: profile?.email ? pseudonymizeEmail(profile.email) : null,
+        reason: 'DSGVO Art. 20 request',
+      },
     })
 
     return NextResponse.json(exportData)

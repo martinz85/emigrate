@@ -17,6 +17,14 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get('from')
   const to = searchParams.get('to')
 
+  // Validate date filters
+  if (from && isNaN(Date.parse(from))) {
+    return NextResponse.json({ error: 'Ungültiges Von-Datum' }, { status: 400 })
+  }
+  if (to && isNaN(Date.parse(to))) {
+    return NextResponse.json({ error: 'Ungültiges Bis-Datum' }, { status: 400 })
+  }
+
   // Verify admin access
   const supabaseAuth = await createClient()
   const { data: { user } } = await supabaseAuth.auth.getUser()
@@ -78,11 +86,11 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  // CSV format
+  // CSV format - escape ALL fields to prevent CSV injection
   const csvLines = [
     'email,opted_in_at,source,language',
     ...(data || []).map(row => 
-      `${escapeCSV(row.email)},${row.opted_in_at},${row.source || ''},${row.language || 'de'}`
+      `${escapeCSV(row.email)},${escapeCSV(row.opted_in_at || '')},${escapeCSV(row.source || '')},${escapeCSV(row.language || 'de')}`
     )
   ]
 

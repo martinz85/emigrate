@@ -3,9 +3,28 @@
  * 
  * DSGVO-Compliance: Protokolliert alle Admin-Aktionen für Nachweisbarkeit.
  * Logs werden in der audit_logs Tabelle persistiert.
+ * 
+ * PII-Handling: Emails werden pseudonymisiert gespeichert.
  */
 
 import { createAdminClient } from '@/lib/supabase/server'
+import { createHash } from 'crypto'
+
+/**
+ * Pseudonymize email for audit logging (DSGVO-compliant)
+ * Uses SHA-256 hash with salt for consistent but irreversible mapping
+ */
+export function pseudonymizeEmail(email: string): string {
+  if (!email) return 'unknown'
+  
+  const salt = process.env.AUDIT_SALT || 'default-audit-salt-change-me'
+  const hash = createHash('sha256')
+    .update(email.toLowerCase() + salt)
+    .digest('hex')
+    .substring(0, 16)
+  
+  return `user_${hash}`
+}
 
 /**
  * Supported audit actions

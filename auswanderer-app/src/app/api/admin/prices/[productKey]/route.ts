@@ -57,11 +57,25 @@ export async function PUT(
       }
     }
 
+    const supabase = createAdminClient()
+
+    // Fetch existing price if regularPrice not in body (needed for campaignPrice validation)
+    let effectiveRegularPrice = regularPrice
+    if (effectiveRegularPrice === undefined) {
+      const { data: existingPrice } = await supabase
+        .from('price_config')
+        .select('regular_price')
+        .eq('product_key', productKey)
+        .single()
+      effectiveRegularPrice = existingPrice?.regular_price
+    }
+
     if (campaignPrice !== undefined && campaignPrice !== null) {
       if (typeof campaignPrice !== 'number' || campaignPrice < 0) {
         return NextResponse.json({ error: 'Ungültiger Kampagnen-Preis' }, { status: 400 })
       }
-      if (regularPrice && campaignPrice >= regularPrice) {
+      // Check against effective regular price (existing or new)
+      if (effectiveRegularPrice && campaignPrice >= effectiveRegularPrice) {
         return NextResponse.json({ error: 'Kampagnen-Preis muss kleiner als regulärer Preis sein' }, { status: 400 })
       }
     }
@@ -70,8 +84,6 @@ export async function PUT(
     if (campaignActive && !campaignPrice) {
       return NextResponse.json({ error: 'Kampagnen-Preis erforderlich wenn Kampagne aktiv' }, { status: 400 })
     }
-
-    const supabase = createAdminClient()
 
     // Build update object (only include provided fields)
     const updateData: Record<string, unknown> = {
