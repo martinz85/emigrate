@@ -1,6 +1,6 @@
 # Sprint Status - Auswanderer-Plattform
 # generated: 2026-01-18
-# updated: 2026-01-19
+# updated: 2026-01-19 (Bob SM - Sprint Planning)
 # project: Auswanderer-Plattform
 # project_key: emigrate
 # tracking_system: file-system
@@ -137,14 +137,14 @@ development_status:
   # ============================================
 
   # Epic 7: E-Book Integration (Post-MVP)
-  epic-7: backlog
-  7-1-ebook-landing-page: backlog
+  epic-7: in-progress
+  7-1-ebook-landing-page: ready-for-dev    # ✅ Story created by Bob (SM)
   7-2-ebook-checkout: backlog
   7-3-ebook-download: backlog
 
   # Epic 8: PRO Subscription (Post-MVP)
-  epic-8: backlog
-  8-1-subscription-plans: backlog
+  epic-8: in-progress
+  8-1-subscription-plans: ready-for-dev    # ✅ Story created by Bob (SM)
   8-2-subscription-checkout: backlog
   8-3-subscription-management: backlog
 
