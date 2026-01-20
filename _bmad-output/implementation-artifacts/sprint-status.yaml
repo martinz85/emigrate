@@ -1,6 +1,6 @@
 # Sprint Status - Auswanderer-Plattform
 # generated: 2026-01-18
-# updated: 2026-01-19 (Bob SM - Sprint Planning)
+# updated: 2026-01-20 (Amelia Dev - Story 10.7 Code Review Complete)
 # project: Auswanderer-Plattform
 # project_key: emigrate
 # tracking_system: file-system
@@ -123,14 +123,14 @@ development_status:
   epic-9-retrospective: optional
 
   # Epic 10: Admin Dashboard (Pre-Launch Required - DSGVO Compliance)
-  epic-10: in-progress
+  epic-10: done
   10-1-admin-auth-roles: done         # Admin layout, sidebar, header ✅
   10-2-user-management: done          # DSGVO: User deletion, data export ✅
   10-3-price-management: done         # Stripe price info (manual change) ✅
   10-4-discount-codes: done           # Campaigns and promo codes ✅
   10-5-newsletter-export: done        # CSV/JSON export ✅
   10-6-dashboard-analytics: done      # Revenue, conversions, stats ✅
-  10-7-questions-builder: done           # 🆕 Fragen-Builder: CRUD, Drag&Drop, Bild-Upload ✅ Implemented
+  10-7-questions-builder: done        # Fragen-Builder: CRUD, Drag&Drop, Bild-Upload, Preview ✅
   epic-10-retrospective: optional
 
   # ============================================
