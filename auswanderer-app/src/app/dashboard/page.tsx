@@ -146,7 +146,7 @@ export default async function DashboardPage() {
                           )}
                         </div>
                         <p className="text-sm text-slate-500">
-                          {new Date(analysis.created_at).toLocaleDateString('de-DE', {
+                          {new Date(analysis.created_at || Date.now()).toLocaleDateString('de-DE', {
                             day: '2-digit',
                             month: 'long',
                             year: 'numeric',

@@ -14,6 +14,7 @@ import type {
   AIProviderConfig,
   AISettings,
   AIModel,
+  AICapability,
 } from './types'
 
 // Cache for provider configs (1 minute TTL)
@@ -192,8 +193,8 @@ async function getActiveProviders(): Promise<AIProviderConfig[]> {
     provider: row.provider as AIProvider,
     model: row.model,
     apiKey: row.api_key_encrypted ? decryptApiKeyIfConfigured(row.api_key_encrypted) : '',
-    isActive: row.is_active,
-    priority: row.priority,
+    isActive: row.is_active ?? true,
+    priority: row.priority ?? 0,
     settings: (row.settings as AISettings) || {},
   }))
 
@@ -374,13 +375,13 @@ export async function getAvailableModels(
     description: row.description || undefined,
     inputCostPer1k: Number(row.input_cost_per_1k),
     outputCostPer1k: Number(row.output_cost_per_1k),
-    maxTokens: row.max_tokens,
+    maxTokens: row.max_tokens ?? 4096,
     contextWindow: row.context_window || undefined,
-    isLatest: row.is_latest,
-    isDeprecated: row.is_deprecated,
-    isAvailable: row.is_available,
+    isLatest: row.is_latest ?? false,
+    isDeprecated: row.is_deprecated ?? false,
+    isAvailable: row.is_available ?? true,
     releasedAt: row.released_at || undefined,
-    capabilities: (row.capabilities as string[]) || [],
+    capabilities: Array.isArray(row.capabilities) ? (row.capabilities as AICapability[]) : [],
   }))
 }
 

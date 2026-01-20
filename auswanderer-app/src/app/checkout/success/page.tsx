@@ -30,6 +30,7 @@ function SuccessContent() {
     }
 
     async function verifySession() {
+      if (!sessionId) return // Guard for TypeScript
       try {
         // FIX: Always verify session, don't skip based on URL parameter
         const res = await fetch(`/api/checkout?session_id=${encodeURIComponent(sessionId)}&analysisId=${encodeURIComponent(analysisIdFromUrl || '')}`)

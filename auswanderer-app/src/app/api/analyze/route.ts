@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeEmigration, type AnalysisRequest } from '@/lib/ai'
 import { createClient } from '@/lib/supabase/server'
+import type { Json } from '@/lib/supabase/database.types'
 import { cookies } from 'next/headers'
 import { randomUUID } from 'crypto'
 import {
@@ -117,18 +118,20 @@ export async function POST(request: NextRequest) {
 
     // Prepare analysis data for storage
     const analysisId = randomUUID()
+    const resultData = {
+      topCountry: analysisResult.rankings?.[0]?.country || 'Unbekannt',
+      matchPercentage: analysisResult.rankings?.[0]?.percentage || 0,
+      rankings: analysisResult.rankings || [],
+      recommendation: analysisResult.recommendation || '',
+    }
+
     const analysisData = {
       id: analysisId,
       user_id: user?.id || null,
       session_id: user ? null : newSessionId,
-      ratings: ratings,
-      pre_analysis: preAnalysis || null,
-      result: {
-        topCountry: analysisResult.rankings?.[0]?.country || 'Unbekannt',
-        matchPercentage: analysisResult.rankings?.[0]?.percentage || 0,
-        rankings: analysisResult.rankings || [],
-        recommendation: analysisResult.recommendation || '',
-      },
+      ratings: ratings as unknown as Json,
+      pre_analysis: (preAnalysis || null) as unknown as Json,
+      result: resultData as unknown as Json,
       paid: false,
     }
 
@@ -176,11 +179,11 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime
 
     // Create response with rate limit headers
+    // Note: analysisResult already contains success: true
     const response = NextResponse.json({
-      success: true,
+      ...analysisResult,
       analysisId,
       ...(storageWarning && { warning: storageWarning, storageError: true }),
-      ...analysisResult,
       _meta: {
         duration,
         remaining: rateLimitResult.remaining,

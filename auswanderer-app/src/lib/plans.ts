@@ -120,12 +120,17 @@ export function transformDbPlan(row: {
   price_yearly: number | null
   stripe_price_id_monthly: string | null
   stripe_price_id_yearly: string | null
-  features: string[]
-  is_active: boolean
-  display_order: number
-  created_at: string
-  updated_at: string
+  features: unknown // Json type from database
+  is_active: boolean | null
+  display_order: number | null
+  created_at: string | null
+  updated_at: string | null
 }): Plan {
+  // Safely convert features from Json to string[]
+  const features = Array.isArray(row.features) 
+    ? row.features.filter((f): f is string => typeof f === 'string')
+    : []
+  
   return {
     id: row.id,
     name: row.name,
@@ -135,11 +140,11 @@ export function transformDbPlan(row: {
     priceYearly: row.price_yearly,
     stripePriceIdMonthly: row.stripe_price_id_monthly,
     stripePriceIdYearly: row.stripe_price_id_yearly,
-    features: row.features,
-    isActive: row.is_active,
-    displayOrder: row.display_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    features,
+    isActive: row.is_active ?? true,
+    displayOrder: row.display_order ?? 0,
+    createdAt: row.created_at ?? new Date().toISOString(),
+    updatedAt: row.updated_at ?? new Date().toISOString(),
   }
 }
 

@@ -9,7 +9,8 @@ import { resend, EMAIL_FROM, isEmailConfigured } from './client'
 interface SendEmailOptions {
   to: string
   subject: string
-  react: React.ReactElement
+  react?: React.ReactElement
+  text?: string
 }
 
 interface SendEmailResult {
@@ -27,7 +28,8 @@ interface SendEmailResult {
 export async function sendEmail({ 
   to, 
   subject, 
-  react 
+  react,
+  text
 }: SendEmailOptions): Promise<SendEmailResult> {
   // Check if email service is configured
   if (!isEmailConfigured() || !resend) {
@@ -40,12 +42,12 @@ export async function sendEmail({
   }
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: EMAIL_FROM,
-      to,
-      subject,
-      react,
-    })
+    // Build email options based on content type
+    const emailOptions = react 
+      ? { from: EMAIL_FROM, to, subject, react }
+      : { from: EMAIL_FROM, to, subject, text: text || '' }
+    
+    const { data, error } = await resend.emails.send(emailOptions)
 
     if (error) {
       console.error('[Email] Send error:', error.message)

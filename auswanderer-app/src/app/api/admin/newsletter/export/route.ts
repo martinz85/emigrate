@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   // Build query with pagination limit
   let query = supabase
     .from('newsletter_subscribers')
-    .select('email, opted_in_at, source, language', { count: 'exact' })
+    .select('email, opted_in_at, source, unsubscribed_at', { count: 'exact' })
     .order('opted_in_at', { ascending: false })
     .limit(MAX_EXPORT_SIZE)
 
@@ -88,9 +88,9 @@ export async function GET(request: NextRequest) {
 
   // CSV format - escape ALL fields to prevent CSV injection
   const csvLines = [
-    'email,opted_in_at,source,language',
+    'email,opted_in_at,source,status',
     ...(data || []).map(row => 
-      `${escapeCSV(row.email)},${escapeCSV(row.opted_in_at || '')},${escapeCSV(row.source || '')},${escapeCSV(row.language || 'de')}`
+      `${escapeCSV(row.email)},${escapeCSV(row.opted_in_at || '')},${escapeCSV(row.source || '')},${escapeCSV(row.unsubscribed_at ? 'unsubscribed' : 'active')}`
     )
   ]
 

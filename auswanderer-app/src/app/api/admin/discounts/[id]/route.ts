@@ -48,10 +48,10 @@ export async function DELETE(
 
   const supabase = createAdminClient()
 
-  // First, get the discount to find the Stripe coupon ID
+  // First, get the discount code for audit log
   const { data: discount } = await supabase
     .from('discount_codes')
-    .select('code, stripe_coupon_id')
+    .select('code')
     .eq('id', discountId)
     .single()
 
@@ -66,16 +66,8 @@ export async function DELETE(
     return NextResponse.json({ error: 'Löschen fehlgeschlagen' }, { status: 500 })
   }
 
-  // Delete Stripe coupon if exists
-  if (stripe && discount?.stripe_coupon_id) {
-    try {
-      await stripe.coupons.del(discount.stripe_coupon_id)
-      console.log(`Stripe coupon deleted: ${discount.stripe_coupon_id}`)
-    } catch (stripeError) {
-      // Log but don't fail - Supabase record is already deleted
-      console.error('Stripe coupon deletion failed:', stripeError)
-    }
-  }
+  // Note: Stripe coupon integration is not yet implemented
+  // TODO: Add stripe_coupon_id to discount_codes table if Stripe coupon sync is needed
 
   // Persist audit log
   await logAuditEvent({

@@ -4,8 +4,9 @@ interface Subscriber {
   id: string
   email: string
   source: string | null
-  opted_in_at: string
-  language: string | null
+  opted_in_at: string | null
+  unsubscribed_at: string | null
+  user_id: string | null
 }
 
 interface SubscriberTableProps {
@@ -41,7 +42,7 @@ export function SubscriberTable({ subscribers }: SubscriberTableProps) {
           <tr>
             <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Email</th>
             <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Quelle</th>
-            <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Sprache</th>
+            <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Status</th>
             <th className="text-left px-6 py-4 text-sm font-medium text-slate-600">Opt-in Datum</th>
           </tr>
         </thead>
@@ -59,11 +60,19 @@ export function SubscriberTable({ subscribers }: SubscriberTableProps) {
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="text-sm text-slate-600">{subscriber.language || 'de'}</span>
+                  {subscriber.unsubscribed_at ? (
+                    <span className="text-xs px-2 py-1 rounded-full font-medium bg-red-100 text-red-700">
+                      Abgemeldet
+                    </span>
+                  ) : (
+                    <span className="text-xs px-2 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700">
+                      Aktiv
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-slate-500">
-                    {new Date(subscriber.opted_in_at).toLocaleDateString('de-DE')}
+                    {subscriber.opted_in_at ? new Date(subscriber.opted_in_at).toLocaleDateString('de-DE') : '-'}
                   </span>
                 </td>
               </tr>

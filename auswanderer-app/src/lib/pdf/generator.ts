@@ -14,7 +14,7 @@
  * 3. Or generate PDF directly without HTML intermediate (e.g., @react-pdf/renderer)
  */
 
-import { AnalysisResult, CountryScore } from './claude'
+import type { AnalysisResult, CountryScore } from '@/lib/ai/types'
 
 export interface PDFData {
   user: {
@@ -113,12 +113,12 @@ export function generatePreviewHtml(data: PDFData): string {
           </tr>
         </thead>
         <tbody>
-          ${top3.map((country, i) => `
+          ${top3.map((country: CountryScore, i: number) => `
             <tr>
               <td><span class="rank-badge rank-${i + 1}">${i + 1}</span></td>
               <td><strong>${country.country}</strong></td>
               <td><span class="percentage">${country.percentage}%</span></td>
-              <td>${country.strengths.slice(0, 2).join(', ')}</td>
+              <td>${(country.strengths || []).slice(0, 2).join(', ')}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -141,14 +141,14 @@ export function generatePreviewHtml(data: PDFData): string {
       <div style="background: #C6EFCE; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
         <strong>✅ Stärken:</strong>
         <ul style="margin-top: 10px;">
-          ${analysis.rankings[0].strengths.map(s => `<li>${s}</li>`).join('')}
+          ${(analysis.rankings[0]?.strengths || []).map((s: string) => `<li>${s}</li>`).join('')}
         </ul>
       </div>
 
       <div style="background: #FFEB9C; padding: 15px; border-radius: 8px;">
         <strong>⚠️ Beachte:</strong>
         <ul style="margin-top: 10px;">
-          ${analysis.rankings[0].considerations.map(c => `<li>${c}</li>`).join('')}
+          ${(analysis.rankings[0]?.considerations || []).map((c: string) => `<li>${c}</li>`).join('')}
         </ul>
       </div>
     </div>

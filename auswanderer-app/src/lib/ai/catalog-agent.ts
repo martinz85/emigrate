@@ -11,7 +11,8 @@
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { getSpecificAdapter } from './factory'
-import type { AIProvider, ModelUpdate, CatalogCheck } from './types'
+import type { AIProvider, ModelUpdate, CatalogCheck, ModelUpdateType } from './types'
+import type { Json } from '@/lib/supabase/database.types'
 
 // Pricing page URLs
 const PRICING_URLS: Partial<Record<AIProvider, string>> = {
@@ -163,8 +164,8 @@ Analysiere die Unterschiede und gib mir die Updates als JSON.`,
         update_type: update.type,
         provider: update.provider,
         model_id: update.modelId,
-        current_data: getCurrentModelData(currentCatalog, update.modelId),
-        suggested_data: update.suggestedData,
+        current_data: getCurrentModelData(currentCatalog, update.modelId) as unknown as Json,
+        suggested_data: update.suggestedData as unknown as Json,
         change_summary: update.changeSummary,
         confidence: update.confidence,
         status: 'pending',
@@ -221,6 +222,7 @@ async function fetchPricingPages(): Promise<Record<AIProvider, string>> {
     claude: '',
     openai: '',
     gemini: '',
+    groq: '',
   }
 
   for (const [provider, url] of Object.entries(PRICING_URLS)) {
@@ -339,12 +341,12 @@ export async function applyModelUpdate(
       await supabase.from('ai_model_catalog').insert({
         id: update.model_id,
         provider: update.provider,
-        name: suggestedData.name,
-        input_cost_per_1k: suggestedData.inputCostPer1k,
-        output_cost_per_1k: suggestedData.outputCostPer1k,
-        max_tokens: suggestedData.maxTokens || 4096,
+        name: String(suggestedData.name || 'Unknown Model'),
+        input_cost_per_1k: Number(suggestedData.inputCostPer1k) || 0,
+        output_cost_per_1k: Number(suggestedData.outputCostPer1k) || 0,
+        max_tokens: Number(suggestedData.maxTokens) || 4096,
         is_available: true,
-        is_latest: suggestedData.isLatest || false,
+        is_latest: Boolean(suggestedData.isLatest) || false,
       })
       break
 
@@ -352,8 +354,8 @@ export async function applyModelUpdate(
       await supabase
         .from('ai_model_catalog')
         .update({
-          input_cost_per_1k: suggestedData.inputCostPer1k,
-          output_cost_per_1k: suggestedData.outputCostPer1k,
+          input_cost_per_1k: Number(suggestedData.inputCostPer1k) || 0,
+          output_cost_per_1k: Number(suggestedData.outputCostPer1k) || 0,
           updated_at: new Date().toISOString(),
         })
         .eq('id', update.model_id)
@@ -422,18 +424,18 @@ export async function getPendingUpdates(): Promise<ModelUpdate[]> {
 
   return (data || []).map((row) => ({
     id: row.id,
-    updateType: row.update_type,
-    provider: row.provider,
+    updateType: row.update_type as ModelUpdateType,
+    provider: row.provider as AIProvider,
     modelId: row.model_id,
-    currentData: row.current_data,
-    suggestedData: row.suggested_data,
-    changeSummary: row.change_summary,
-    sourceUrl: row.source_url,
-    confidence: Number(row.confidence),
-    status: row.status,
-    checkedAt: row.checked_at,
-    appliedAt: row.applied_at,
-    appliedBy: row.applied_by,
+    currentData: row.current_data as Record<string, unknown> | null,
+    suggestedData: row.suggested_data as Record<string, unknown>,
+    changeSummary: row.change_summary || '',
+    sourceUrl: row.source_url || undefined,
+    confidence: Number(row.confidence) || 0,
+    status: (row.status || 'pending') as 'pending' | 'applied' | 'dismissed' | 'invalid',
+    checkedAt: row.checked_at || new Date().toISOString(),
+    appliedAt: row.applied_at || undefined,
+    appliedBy: row.applied_by || undefined,
   }))
 }
 
@@ -456,19 +458,19 @@ export async function getRecentChecks(limit = 10): Promise<CatalogCheck[]> {
 
   return (data || []).map((row) => ({
     id: row.id,
-    checkedAt: row.checked_at,
-    triggerType: row.trigger_type,
-    triggeredBy: row.triggered_by,
-    status: row.status,
-    modelsChecked: row.models_checked,
-    updatesFound: row.updates_found,
-    aiModelUsed: row.ai_model_used,
-    aiInputTokens: row.ai_input_tokens,
-    aiOutputTokens: row.ai_output_tokens,
+    checkedAt: row.checked_at || new Date().toISOString(),
+    triggerType: (row.trigger_type || 'manual') as 'cron' | 'manual',
+    triggeredBy: row.triggered_by || undefined,
+    status: (row.status || 'running') as 'running' | 'completed' | 'failed',
+    modelsChecked: row.models_checked || 0,
+    updatesFound: row.updates_found || 0,
+    aiModelUsed: row.ai_model_used || undefined,
+    aiInputTokens: row.ai_input_tokens || undefined,
+    aiOutputTokens: row.ai_output_tokens || undefined,
     aiCostUsd: row.ai_cost_usd ? Number(row.ai_cost_usd) : undefined,
-    durationMs: row.duration_ms,
-    errorMessage: row.error_message,
-    completedAt: row.completed_at,
+    durationMs: row.duration_ms || undefined,
+    errorMessage: row.error_message || undefined,
+    completedAt: row.completed_at || undefined,
   }))
 }
 

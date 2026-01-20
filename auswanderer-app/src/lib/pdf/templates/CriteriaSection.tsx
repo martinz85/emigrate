@@ -114,7 +114,7 @@ export function CriteriaSection({ criteria, pageNumber }: CriteriaSectionProps) 
           key={i}
           style={[
             styles.ratingDot,
-            i <= rating && styles.ratingDotFilled,
+            i <= rating ? styles.ratingDotFilled : {},
           ]}
         />
       )

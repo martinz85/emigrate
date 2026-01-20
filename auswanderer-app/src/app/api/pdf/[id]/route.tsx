@@ -104,7 +104,7 @@ export async function GET(
     const reportData = {
       topCountry: result.topCountry,
       matchPercentage: result.matchPercentage,
-      createdAt: analysis.created_at,
+      createdAt: analysis.created_at || new Date().toISOString(),
       criteriaRatings: extractCriteriaRatings(analysis.ratings),
       rankings: result.rankings,
     }
@@ -278,7 +278,7 @@ function generateTextReport(data: ReportData): string {
   lines.push('')
   
   // Group by category
-  const categories = [...new Set(data.criteriaRatings.map(c => c.category))]
+  const categories = Array.from(new Set(data.criteriaRatings.map(c => c.category)))
   for (const category of categories) {
     lines.push(`▸ ${category}`)
     const categoryRatings = data.criteriaRatings.filter(c => c.category === category)

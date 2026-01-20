@@ -8,11 +8,8 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['@react-pdf/renderer'],
   },
-  // Temporarily ignore TypeScript errors during build
-  // TODO: Fix all type errors and remove this
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  // VPS standalone output
+  output: 'standalone',
 }
 
 module.exports = nextConfig

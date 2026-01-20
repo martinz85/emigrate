@@ -9,6 +9,7 @@
 
 import { createAdminClient } from '@/lib/supabase/server'
 import { createHash } from 'crypto'
+import type { Json } from '@/lib/supabase/database.types'
 
 /**
  * Pseudonymize email for audit logging (DSGVO-compliant)
@@ -74,7 +75,7 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<void> {
         target_id: entry.targetId || null,
         target_type: entry.targetType || null,
         admin_id: entry.adminId,
-        metadata: entry.metadata || null,
+        metadata: (entry.metadata as Json) || null,
       })
 
     if (error) {

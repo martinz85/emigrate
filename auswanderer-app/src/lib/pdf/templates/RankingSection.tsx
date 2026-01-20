@@ -161,24 +161,24 @@ export function RankingSection({ rankings, pageNumber }: RankingSectionProps) {
             {/* Country Header */}
             <View style={[
               styles.countryHeader,
-              isTop && styles.countryHeaderTop,
+              isTop ? styles.countryHeaderTop : {},
             ]}>
               <View style={[styles.rankBadge, getRankBadgeStyle(item.rank)]}>
                 <Text style={styles.rankNumber}>{item.rank}</Text>
               </View>
               <Text style={[
                 styles.countryName,
-                isTop && styles.countryNameTop,
+                isTop ? styles.countryNameTop : {},
               ]}>
                 {item.country}
               </Text>
               <View style={[
                 styles.percentageBadge,
-                isTop && styles.percentageBadgeTop,
+                isTop ? styles.percentageBadgeTop : {},
               ]}>
                 <Text style={[
                   styles.percentageText,
-                  isTop && styles.percentageTextTop,
+                  isTop ? styles.percentageTextTop : {},
                 ]}>
                   {item.percentage}%
                 </Text>
