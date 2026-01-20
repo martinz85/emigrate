@@ -284,13 +284,23 @@ CREATE POLICY "Public read categories" ON question_categories
 
 ### Supabase Storage Setup
 
-```bash
-# Im Supabase Dashboard oder via CLI
-# Bucket: question-images (public)
-# Policies:
-# - Public Read: true
-# - Authenticated Write: true (nur Admins via RLS)
+Der Storage Bucket wird **automatisch** von der Upload-API erstellt:
+
+```typescript
+// In src/app/api/admin/questions/upload/route.ts
+const { data: buckets } = await supabase.storage.listBuckets()
+const bucketExists = buckets?.some(b => b.name === 'question-images')
+
+if (!bucketExists) {
+  await supabase.storage.createBucket('question-images', {
+    public: true,
+    fileSizeLimit: 5242880, // 5MB
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+  })
+}
 ```
+
+**Kein manuelles Setup erforderlich!** Der Bucket wird beim ersten Upload automatisch erstellt.
 
 ### Migration der bestehenden Kriterien
 
@@ -388,35 +398,58 @@ Keine Probleme während der Implementierung.
 
 ### File List
 
-**Neue Dateien:**
-- `supabase/migrations/020_question_builder.sql`
-- `src/types/questions.ts`
-- `src/lib/questions.ts`
-- `src/app/api/questions/route.ts`
-- `src/app/api/admin/questions/route.ts`
-- `src/app/api/admin/questions/[id]/route.ts`
-- `src/app/api/admin/questions/reorder/route.ts`
-- `src/app/api/admin/questions/upload/route.ts`
-- `src/app/api/admin/questions/categories/route.ts`
-- `src/app/api/admin/questions/categories/[id]/route.ts`
-- `src/app/admin/questions/page.tsx`
-- `src/app/admin/questions/QuestionTable.tsx`
-- `src/app/admin/questions/QuestionForm.tsx`
-- `src/app/admin/questions/new/page.tsx`
-- `src/app/admin/questions/[id]/page.tsx`
-- `src/app/admin/questions/categories/page.tsx`
-- `src/app/admin/questions/categories/CategoryTable.tsx`
-- `src/components/analysis/DynamicQuestionCard.tsx`
+**Migrations:**
+- `supabase/migrations/020_question_builder.sql` - Haupttabellen
+- `supabase/migrations/021_question_images_bucket.sql` - Storage Bucket RLS
+- `supabase/migrations/022_analysis_settings.sql` - Globale Settings (deprecated)
+- `supabase/migrations/023_question_text_input.sql` - Optionales Textfeld pro Frage
+
+**Types & Utilities:**
+- `src/types/questions.ts` - TypeScript Definitionen
+- `src/lib/questions.ts` - Fragen aus DB laden
+- `src/lib/test-helpers.ts` - Test-Utilities
+
+**API Routes (Admin):**
+- `src/app/api/admin/questions/route.ts` - GET/POST Fragen
+- `src/app/api/admin/questions/[id]/route.ts` - GET/PATCH/DELETE Frage
+- `src/app/api/admin/questions/reorder/route.ts` - Sortierung
+- `src/app/api/admin/questions/upload/route.ts` - Bild-Upload (erstellt Bucket automatisch)
+- `src/app/api/admin/questions/categories/route.ts` - GET/POST Kategorien
+- `src/app/api/admin/questions/categories/[id]/route.ts` - CRUD Kategorie
+- `src/app/api/admin/settings/route.ts` - Globale Settings
+
+**API Routes (Public):**
+- `src/app/api/questions/route.ts` - Aktive Fragen für Frontend
+- `src/app/api/settings/route.ts` - Globale Settings
+
+**Admin UI:**
+- `src/app/admin/questions/page.tsx` - Hauptseite
+- `src/app/admin/questions/QuestionTable.tsx` - Drag & Drop Tabelle
+- `src/app/admin/questions/QuestionForm.tsx` - Formular mit Validierung
+- `src/app/admin/questions/QuestionPreview.tsx` - Live-Vorschau (AC9)
+- `src/app/admin/questions/AnalysisSettings.tsx` - Globale Settings UI
+- `src/app/admin/questions/new/page.tsx` - Neue Frage
+- `src/app/admin/questions/[id]/page.tsx` - Frage bearbeiten
+- `src/app/admin/questions/categories/page.tsx` - Kategorien
+- `src/app/admin/questions/categories/CategoryTable.tsx` - Kategorien-Tabelle
+
+**Frontend Analyse:**
+- `src/components/analysis/DynamicQuestionCard.tsx` - Alle 4 Fragetypen
+- `src/components/analysis/AdditionalNotesCard.tsx` - Zusätzliches Textfeld
+- `src/components/analysis/RatingButtons.tsx` - Rating mit data-testid
+- `src/stores/analysisStore.ts` - Zustand mit textNotes
 
 **Geänderte Dateien:**
 - `src/types/index.ts` - Export questions types
-- `src/app/admin/components/AdminSidebar.tsx` - Fragen-Link
+- `src/app/admin/components/AdminSidebar.tsx` - Fragen-Link + Layout-Fix
+- `src/app/admin/layout.tsx` - Flexbox Layout
 - `src/app/analyse/page.tsx` - SSR questions loading
-- `src/components/analysis/AnalysisFlow.tsx` - Dynamic questions
-- `src/components/analysis/index.ts` - Export DynamicQuestionCard
+- `src/components/analysis/AnalysisFlow.tsx` - Dynamic questions + Back-Button
+- `src/components/analysis/index.ts` - Exports
 - `src/lib/claude/analyze.ts` - Weight support
 - `src/app/api/analyze/route.ts` - Load weights from DB
 - `package.json` - @dnd-kit/*, react-dropzone
+- `.cursor/rules/testing-conventions.mdc` - Test-Konventionen
 
 ---
 

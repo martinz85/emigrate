@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { RatingButtons } from './RatingButtons'
 import type { AnalysisQuestionWithCategory } from '@/types/questions'
 
-// Generate Supabase Storage URL for question image (client-safe)
+// Generiere Supabase Storage URL für Frage-Bild (Client-sicher)
 function getQuestionImageUrl(imagePath: string | null): string | null {
   if (!imagePath) return null
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -51,7 +51,7 @@ export function DynamicQuestionCard({
   const categoryIcon = question.category?.icon || '❓'
   const imageUrl = getQuestionImageUrl(question.image_path)
   
-  // Reset state when question changes
+  // State zurücksetzen wenn Frage wechselt
   useEffect(() => {
     setSelectedValue(currentValue ?? null)
     setTextNote(currentTextNote || '')
@@ -68,7 +68,7 @@ export function DynamicQuestionCard({
     onAnswer(selectedValue, textNote.trim() || undefined)
   }
   
-  // Can proceed if a value is selected
+  // Kann fortfahren wenn ein Wert ausgewählt ist
   const canProceed = selectedValue !== null
 
   // ============================================

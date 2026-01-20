@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import type { AnalysisQuestion, QuestionCategory, QuestionType, SelectOption } from '@/types/questions'
+import { QuestionPreview } from './QuestionPreview'
 
 // ============================================
 // Props
@@ -512,6 +513,24 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Live-Vorschau (AC9) */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-slate-800 mb-4">
+          Live-Vorschau
+        </h3>
+        <QuestionPreview
+          questionText={formData.question_text}
+          questionType={formData.question_type}
+          helpText={formData.help_text}
+          selectOptions={formData.select_options}
+          imagePath={imagePath}
+          categoryIcon={categories.find(c => c.id === formData.category_id)?.icon}
+          allowTextInput={formData.allow_text_input}
+          textInputLabel={formData.text_input_label}
+          textInputPlaceholder={formData.text_input_placeholder}
+        />
       </div>
 
       {/* Actions */}
