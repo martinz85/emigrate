@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/server'
-import { sendEmail, PurchaseConfirmationEmail } from '@/lib/email'
+import { sendEmail, PurchaseConfirmationEmail, EbookPurchaseConfirmationEmail } from '@/lib/email'
 
 // Initialize Stripe with secret key
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -391,20 +391,52 @@ async function handleEbookPurchase(session: Stripe.Checkout.Session) {
   // Send confirmation email (non-blocking)
   if (customerEmail) {
     try {
-      // Fetch ebook title
+      // Fetch ebook details
       const { data: ebook } = await (supabase as any)
         .from('ebooks')
-        .select('title')
+        .select('title, emoji, pdf_path')
         .eq('id', ebookId)
         .single()
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://auswanderer-plattform.de'
+      const dashboardUrl = `${appUrl}/dashboard/ebooks`
       
-      // TODO: Create EbookPurchaseConfirmationEmail template
-      // For now, use a simple log
-      console.log(`📧 E-Book confirmation email would be sent to ${maskedEmail} for "${ebook?.title || ebookSlug}"`)
-      console.log(`   Download URL: ${appUrl}/ebooks`)
+      // Generate download URL (7 days validity for email)
+      let downloadUrl = dashboardUrl // Fallback to dashboard
+      if (ebook?.pdf_path) {
+        const { data: signedUrlData } = await supabase.storage
+          .from('ebooks')
+          .createSignedUrl(ebook.pdf_path, 7 * 24 * 3600, {
+            download: `${ebookSlug}.pdf`,
+          })
+        if (signedUrlData?.signedUrl) {
+          downloadUrl = signedUrlData.signedUrl
+        }
+      }
+
+      await sendEmail({
+        to: customerEmail,
+        subject: isBundle 
+          ? '📚 Dein E-Book Bundle ist bereit!'
+          : `📚 Dein E-Book "${ebook?.title || 'E-Book'}" ist bereit!`,
+        react: EbookPurchaseConfirmationEmail({
+          customerName: session.customer_details?.name || undefined,
+          customerEmail: customerEmail,
+          ebookTitle: ebook?.title || ebookSlug || 'E-Book',
+          ebookEmoji: ebook?.emoji || '📚',
+          isBundle: isBundle,
+          purchaseDate: new Date().toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          }),
+          amount: `${(amountTotal! / 100).toFixed(2).replace('.', ',')} €`,
+          downloadUrl: downloadUrl,
+          dashboardUrl: dashboardUrl,
+        }),
+      })
       
+      console.log(`✅ E-Book confirmation email sent to ${maskedEmail}`)
     } catch (emailError) {
       console.error('Failed to send ebook confirmation email:', emailError)
     }

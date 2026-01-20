@@ -2,9 +2,11 @@
 story_id: "7.3"
 title: "E-Book Download"
 epic: "Epic 7 - E-Book Integration"
-status: ready-for-dev
+status: in-progress
 created: 2026-01-19
+started: 2026-01-20
 created_by: Bob (SM)
+implemented_by: Amelia (Dev)
 priority: medium
 estimated_points: 5
 depends_on: ["7.1", "7.2"]

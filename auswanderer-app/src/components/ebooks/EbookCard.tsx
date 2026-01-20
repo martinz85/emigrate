@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Ebook, formatEbookPrice } from '@/lib/ebooks'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -22,6 +23,7 @@ export function EbookCard({
   onToggleDetails,
 }: EbookCardProps) {
   const hasAccess = isPro || hasPurchased
+  const [isDownloading, setIsDownloading] = useState(false)
 
   const handleBuyClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -33,6 +35,27 @@ export function EbookCard({
   const handleToggleClick = (e: React.MouseEvent) => {
     e.preventDefault()
     onToggleDetails?.()
+  }
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!hasAccess) return
+
+    setIsDownloading(true)
+    try {
+      const response = await fetch(`/api/ebooks/${ebook.id}/download`)
+      const data = await response.json()
+
+      if (response.ok && data.downloadUrl) {
+        window.open(data.downloadUrl, '_blank')
+      } else {
+        console.error('Download failed:', data.error)
+      }
+    } catch (error) {
+      console.error('Download error:', error)
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   return (
@@ -86,12 +109,33 @@ export function EbookCard({
               <Badge variant="secondary" className="bg-green-100 text-green-700">
                 {isPro ? 'Im PRO-Abo enthalten' : 'Gekauft'}
               </Badge>
-              <Link
-                href="/ebooks"
-                className="btn-primary w-full text-center py-2.5"
-              >
-                Jetzt lesen
-              </Link>
+              <div className="flex gap-2 w-full">
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="btn-primary flex-1 text-center py-2.5 flex items-center justify-center gap-1 disabled:opacity-50"
+                >
+                  {isDownloading ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      Laden...
+                    </>
+                  ) : (
+                    <>
+                      <span>📥</span>
+                      Download
+                    </>
+                  )}
+                </button>
+                <Link
+                  href="/dashboard/ebooks"
+                  className="btn-secondary px-3 py-2.5 text-sm"
+                  title="Meine E-Books"
+                >
+                  📚
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-between gap-3">

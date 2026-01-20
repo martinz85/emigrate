@@ -5,5 +5,7 @@
 export { PurchaseConfirmationEmail } from './purchase-confirmation'
 export type { PurchaseConfirmationProps } from './purchase-confirmation'
 
+export { EbookPurchaseConfirmationEmail } from './ebook-purchase-confirmation'
+
 export { styles as emailStyles } from './base-styles'
 

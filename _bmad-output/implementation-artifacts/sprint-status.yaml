@@ -142,7 +142,7 @@ development_status:
   epic-7: in-progress
   7-1-ebook-landing-page: done             # ✅ Code Review completed, fixes applied
   7-2-ebook-checkout: done                   # ✅ Stripe Checkout, Webhook, Success Page
-  7-3-ebook-download: ready-for-dev        # ✅ Story created by Bob (SM)
+  7-3-ebook-download: in-progress           # 🔄 Amelia implementing
 
   # Epic 8: PRO Subscription (Post-MVP)
   epic-8: in-progress
