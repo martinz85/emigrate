@@ -2,13 +2,14 @@
 story_id: "7.2"
 title: "E-Book Checkout"
 epic: "Epic 7 - E-Book Integration"
-status: blocked
+status: in-progress
 created: 2026-01-19
+started: 2026-01-20
 created_by: Bob (SM)
+implemented_by: Amelia (Dev)
 priority: high
 estimated_points: 5
 depends_on: ["7.1", "10.8"]
-blocked_by: "10.8 - E-Book Management (Admin)"
 ---
 
 # Story 7.2: E-Book Checkout

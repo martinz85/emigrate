@@ -1,9 +1,15 @@
+/**
+ * E-Book Landing Page
+ * Story 7.1 + 7.2: E-Book Integration with Checkout
+ */
+
 import { Metadata } from 'next'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { EbookGrid } from '@/components/ebooks'
-import { EBOOKS, EBOOK_BUNDLE, getBundleSavings } from '@/lib/ebooks'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { EBOOKS, EBOOK_BUNDLE, getBundleSavings, type Ebook } from '@/lib/ebooks'
+import type { Ebook as DbEbook } from '@/types/ebooks'
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://auswanderer-plattform.de'
 
@@ -26,78 +32,69 @@ export const metadata: Metadata = {
   },
 }
 
-// JSON-LD structured data for products
-function generateJsonLd() {
-  const { originalPrice } = getBundleSavings()
-  
-  const products = [
-    ...EBOOKS.map((ebook) => ({
-      '@type': 'Product',
-      name: ebook.title,
-      description: ebook.description,
-      offers: {
-        '@type': 'Offer',
-        price: (ebook.price / 100).toFixed(2),
-        priceCurrency: 'EUR',
-        availability: 'https://schema.org/InStock',
-      },
-      brand: {
-        '@type': 'Brand',
-        name: 'Auswanderer-Plattform',
-      },
-    })),
-    {
-      '@type': 'Product',
-      name: EBOOK_BUNDLE.title,
-      description: EBOOK_BUNDLE.description,
-      offers: {
-        '@type': 'AggregateOffer',
-        lowPrice: (EBOOK_BUNDLE.price / 100).toFixed(2),
-        highPrice: (originalPrice / 100).toFixed(2),
-        priceCurrency: 'EUR',
-        offerCount: 4,
-        availability: 'https://schema.org/InStock',
-      },
-      brand: {
-        '@type': 'Brand',
-        name: 'Auswanderer-Plattform',
-      },
-    },
-  ]
+// Disable caching - need fresh user data
+export const dynamic = 'force-dynamic'
 
+/**
+ * Convert DB ebook to client format
+ */
+function dbEbookToClient(dbEbook: DbEbook): Ebook {
   return {
-    '@context': 'https://schema.org',
-    '@graph': [
-      {
-        '@type': 'WebPage',
-        name: 'E-Books für Auswanderer',
-        description: 'Expertenwissen für deinen Neustart im Ausland',
-        url: `${BASE_URL}/ebooks`,
-      },
-      {
-        '@type': 'ItemList',
-        itemListElement: products.map((product, index) => ({
-          '@type': 'ListItem',
-          position: index + 1,
-          item: product,
-        })),
-      },
-    ],
+    id: dbEbook.id,
+    slug: dbEbook.slug,
+    title: dbEbook.title,
+    subtitle: dbEbook.subtitle || '',
+    description: dbEbook.description,
+    longDescription: dbEbook.long_description || '',
+    price: dbEbook.price,
+    pages: dbEbook.pages ?? 0,
+    readingTime: dbEbook.reading_time || '',
+    chapters: dbEbook.chapters || [],
+    features: dbEbook.features || [],
+    color: dbEbook.color,
+    emoji: dbEbook.emoji,
+    isBundle: dbEbook.is_bundle,
+    bundleItems: dbEbook.bundle_items || undefined,
+    stripePriceId: dbEbook.stripe_price_id || undefined,
+    pdfPath: dbEbook.pdf_path || undefined,
+    coverPath: dbEbook.cover_path || undefined,
   }
 }
 
 export default async function EbooksPage() {
-  // Check if user is PRO
+  // Fetch ebooks from database
+  let ebooks: Ebook[] = EBOOKS
+  let bundle: Ebook | null = EBOOK_BUNDLE
   let isPro = false
-  let purchasedEbooks: string[] = []
+  let purchasedEbookIds: string[] = []
 
   try {
     const supabase = await createClient()
+    const supabaseAdmin = createAdminClient()
+
+    // Fetch ebooks from DB
+    const { data: dbEbooks, error: ebooksError } = await (supabaseAdmin as any)
+      .from('ebooks')
+      .select('*')
+      .eq('is_active', true)
+      .is('deleted_at', null)
+      .order('sort_order', { ascending: true }) as { data: DbEbook[] | null; error: Error | null }
+
+    if (!ebooksError && dbEbooks && dbEbooks.length > 0) {
+      // Separate regular ebooks and bundles
+      const regularEbooks = dbEbooks.filter(e => !e.is_bundle)
+      const bundleEbook = dbEbooks.find(e => e.is_bundle)
+      
+      ebooks = regularEbooks.map(dbEbookToClient)
+      bundle = bundleEbook ? dbEbookToClient(bundleEbook) : null
+    }
+
+    // Check user auth and status
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
       // Check PRO status
-      const { data: profile } = await supabase
+      const { data: profile } = await supabaseAdmin
         .from('profiles')
         .select('subscription_tier')
         .eq('id', user.id)
@@ -105,20 +102,21 @@ export default async function EbooksPage() {
 
       isPro = profile?.subscription_tier === 'pro'
 
-      // Get purchased ebooks (for Story 7.2/7.3)
-      // TODO: Implement after user_ebooks table is created
-      // const { data: userEbooks } = await supabase
-      //   .from('user_ebooks')
-      //   .select('ebook_id')
-      //   .eq('user_id', user.id)
-      // purchasedEbooks = userEbooks?.map(e => e.ebook_id) || []
+      // Get purchased ebooks (Story 7.2)
+      const { data: userEbooks } = await (supabaseAdmin as any)
+        .from('user_ebooks')
+        .select('ebook_id')
+        .eq('user_id', user.id)
+
+      purchasedEbookIds = userEbooks?.map((e: { ebook_id: string }) => e.ebook_id) || []
     }
   } catch (error) {
-    // Silently handle auth errors for public page
-    console.error('Error checking user status:', error)
+    // Silently handle errors for public page - fallback to hardcoded data
+    console.error('Error loading ebooks page data:', error)
   }
 
-  const jsonLd = generateJsonLd()
+  // Generate JSON-LD
+  const jsonLd = generateJsonLd(ebooks, bundle)
 
   return (
     <>
@@ -147,8 +145,10 @@ export default async function EbooksPage() {
           {/* E-Books Grid */}
           <div className="max-w-5xl mx-auto px-4">
             <EbookGrid
+              ebooks={ebooks}
+              bundle={bundle}
               isPro={isPro}
-              purchasedEbooks={purchasedEbooks}
+              purchasedEbooks={purchasedEbookIds}
             />
           </div>
 
@@ -179,4 +179,69 @@ export default async function EbooksPage() {
       </main>
     </>
   )
+}
+
+/**
+ * Generate JSON-LD structured data for SEO
+ */
+function generateJsonLd(ebooks: Ebook[], bundle: Ebook | null) {
+  const { originalPrice } = bundle 
+    ? { originalPrice: ebooks.reduce((sum, e) => sum + e.price, 0) }
+    : getBundleSavings()
+  
+  const products = [
+    ...ebooks.map((ebook) => ({
+      '@type': 'Product',
+      name: ebook.title,
+      description: ebook.description,
+      offers: {
+        '@type': 'Offer',
+        price: (ebook.price / 100).toFixed(2),
+        priceCurrency: 'EUR',
+        availability: 'https://schema.org/InStock',
+      },
+      brand: {
+        '@type': 'Brand',
+        name: 'Auswanderer-Plattform',
+      },
+    })),
+  ]
+
+  if (bundle) {
+    products.push({
+      '@type': 'Product',
+      name: bundle.title,
+      description: bundle.description,
+      offers: {
+        '@type': 'Offer',
+        price: (bundle.price / 100).toFixed(2),
+        priceCurrency: 'EUR',
+        availability: 'https://schema.org/InStock',
+      },
+      brand: {
+        '@type': 'Brand',
+        name: 'Auswanderer-Plattform',
+      },
+    })
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebPage',
+        name: 'E-Books für Auswanderer',
+        description: 'Expertenwissen für deinen Neustart im Ausland',
+        url: `${BASE_URL}/ebooks`,
+      },
+      {
+        '@type': 'ItemList',
+        itemListElement: products.map((product, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          item: product,
+        })),
+      },
+    ],
+  }
 }

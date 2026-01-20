@@ -14,6 +14,10 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
  * Stripe Webhook Handler
  * Receives and processes payment events from Stripe
  * 
+ * Supports:
+ * - Analysis purchases (product: 'analysis')
+ * - E-Book purchases (type: 'ebook') - Story 7.2
+ * 
  * Note: In Next.js App Router, the body is not automatically parsed,
  * so request.text() returns the raw body needed for signature verification.
  */
@@ -108,96 +112,73 @@ const EXPECTED_CURRENCY = 'eur'
 
 /**
  * Handle successful checkout completion
- * Validates payment details and updates Supabase
- * 
- * CRITICAL: Uses priceUsed from session.metadata for dynamic pricing support.
- * This value is set at checkout creation time and represents the actual expected price.
+ * Routes to appropriate handler based on product type
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const productType = session.metadata?.type || session.metadata?.product
+  
+  console.log('=== Checkout Session Completed ===')
+  console.log(`Session ID: ${session.id}`)
+  console.log(`Product Type: ${productType}`)
+  console.log(`Payment Status: ${session.payment_status}`)
+  console.log('==================================')
+
+  // Validate payment status
+  if (session.payment_status !== 'paid') {
+    console.error(`Payment not completed. Status: ${session.payment_status}`)
+    throw new Error(`Invalid payment status: ${session.payment_status}`)
+  }
+
+  // Route to appropriate handler
+  switch (productType) {
+    case 'analysis':
+      await handleAnalysisPurchase(session)
+      break
+    case 'ebook':
+      await handleEbookPurchase(session)
+      break
+    default:
+      console.error(`Unknown product type: ${productType}`)
+      throw new Error(`Unknown product type: ${productType}`)
+  }
+}
+
+/**
+ * Handle Analysis Purchase
+ * Original handler for analysis payments
+ */
+async function handleAnalysisPurchase(session: Stripe.Checkout.Session) {
   const analysisId = session.metadata?.analysisId
   const customerEmail = session.customer_details?.email
   const amountTotal = session.amount_total
-  const paymentStatus = session.payment_status
   const currency = session.currency
-  const product = session.metadata?.product
-  
+
   // CRITICAL: Use price from metadata (set at checkout creation) for validation
-  // This supports dynamic pricing / campaigns
   const expectedPrice = session.metadata?.priceUsed 
     ? parseInt(session.metadata.priceUsed, 10) 
     : FALLBACK_AMOUNT
 
   // Mask PII in production logs (DSGVO compliance)
-  const maskedEmail = (() => {
-    if (!customerEmail) return 'N/A'
-    if (process.env.NODE_ENV !== 'production') return customerEmail
-    
-    const [local, domain] = customerEmail.split('@')
-    if (!local || !domain) return '***@***'
-    
-    const maskedLocal = local.substring(0, 2) + '***'
-    const domainParts = domain.split('.')
-    const maskedDomain = '***.' + (domainParts[domainParts.length - 1] || 'com')
-    return `${maskedLocal}@${maskedDomain}`
-  })()
+  const maskedEmail = maskEmail(customerEmail)
 
-  console.log('=== Checkout Session Completed ===')
-  console.log(`Session ID: ${session.id}`)
   console.log(`Analysis ID: ${analysisId}`)
-  console.log(`Product: ${product}`)
   console.log(`Customer Email: ${maskedEmail}`)
   console.log(`Amount: ${amountTotal ? amountTotal / 100 : 0} ${currency?.toUpperCase() || 'EUR'}`)
-  console.log(`Expected Price: ${expectedPrice / 100} EUR (from metadata)`)
-  console.log(`Payment Status: ${paymentStatus}`)
-  console.log('==================================')
-
-  // Validate payment status
-  if (paymentStatus !== 'paid') {
-    console.error(`Payment not completed. Status: ${paymentStatus}`)
-    throw new Error(`Invalid payment status: ${paymentStatus}`)
-  }
-
-  // Validate product type
-  if (product !== 'analysis') {
-    console.error(`Invalid product type: ${product}`)
-    throw new Error(`Invalid product: ${product}`)
-  }
 
   // Validate payment mode
   if (session.mode !== 'payment') {
-    console.error(`Invalid payment mode: ${session.mode}`)
     throw new Error(`Invalid payment mode: ${session.mode}`)
   }
 
-  // Validate amount matches expected price from checkout creation
-  // This prevents underpayment attacks even with dynamic pricing
-  if (!amountTotal || amountTotal < MINIMUM_AMOUNT) {
-    console.error(`Amount too low: ${amountTotal}, minimum: ${MINIMUM_AMOUNT}`)
-    throw new Error(`Payment amount too low: ${amountTotal}`)
-  }
-
-  // CRITICAL: Validate against the price that was set at checkout creation
-  // Allow small tolerance for potential rounding (though shouldn't happen with cents)
-  if (amountTotal !== expectedPrice) {
-    // Check if discount was applied (explains difference)
-    const discountApplied = session.total_details?.amount_discount || 0
-    const amountBeforeDiscount = amountTotal + discountApplied
-    
-    if (amountBeforeDiscount !== expectedPrice) {
-      console.error(`Amount mismatch: paid ${amountTotal}, expected ${expectedPrice}, discount ${discountApplied}`)
-      throw new Error(`Invalid payment amount: ${amountTotal}, expected: ${expectedPrice}`)
-    }
-    console.log(`Discount applied: ${discountApplied / 100}€ (original: ${expectedPrice / 100}€)`)
-  }
+  // Validate amount
+  validatePaymentAmount(amountTotal, expectedPrice, session.total_details?.amount_discount || 0)
 
   // Validate currency
   if (currency?.toLowerCase() !== EXPECTED_CURRENCY) {
-    console.error(`Invalid currency: ${currency}, expected: ${EXPECTED_CURRENCY}`)
     throw new Error(`Invalid currency: ${currency}`)
   }
 
   if (!analysisId) {
-    console.error('No analysisId in session metadata')
     throw new Error('Missing analysisId in metadata')
   }
 
@@ -258,10 +239,212 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       
       console.log(`✅ Confirmation email sent for analysis ${analysisId}`)
     } catch (emailError) {
-      // Log but don't fail the webhook - email is non-critical
       console.error('Failed to send confirmation email:', emailError)
     }
+  }
+}
+
+/**
+ * Handle E-Book Purchase
+ * Story 7.2: E-Book Checkout
+ */
+async function handleEbookPurchase(session: Stripe.Checkout.Session) {
+  const ebookId = session.metadata?.ebook_id
+  const ebookSlug = session.metadata?.ebook_slug
+  const isBundle = session.metadata?.is_bundle === 'true'
+  const bundleItems = session.metadata?.bundle_items
+  const userId = session.metadata?.user_id
+  const customerEmail = session.customer_details?.email
+  const amountTotal = session.amount_total
+  const currency = session.currency
+
+  const expectedPrice = session.metadata?.priceUsed 
+    ? parseInt(session.metadata.priceUsed, 10) 
+    : 0
+
+  const maskedEmail = maskEmail(customerEmail)
+
+  console.log(`E-Book ID: ${ebookId}`)
+  console.log(`E-Book Slug: ${ebookSlug}`)
+  console.log(`Is Bundle: ${isBundle}`)
+  console.log(`User ID: ${userId}`)
+  console.log(`Customer Email: ${maskedEmail}`)
+  console.log(`Amount: ${amountTotal ? amountTotal / 100 : 0} ${currency?.toUpperCase() || 'EUR'}`)
+
+  // Validate payment mode
+  if (session.mode !== 'payment') {
+    throw new Error(`Invalid payment mode: ${session.mode}`)
+  }
+
+  // Validate amount (allow 0 for free ebooks, though shouldn't reach webhook)
+  if (expectedPrice > 0) {
+    validatePaymentAmount(amountTotal, expectedPrice, session.total_details?.amount_discount || 0)
+  }
+
+  // Validate currency
+  if (currency?.toLowerCase() !== EXPECTED_CURRENCY) {
+    throw new Error(`Invalid currency: ${currency}`)
+  }
+
+  if (!ebookId) {
+    throw new Error('Missing ebook_id in metadata')
+  }
+
+  const supabase = createAdminClient()
+
+  // Handle guest purchases - need to create or find user by email
+  let finalUserId: string | null | undefined = userId
+  if (!finalUserId || finalUserId === 'guest') {
+    if (!customerEmail) {
+      throw new Error('No user ID and no email for guest purchase')
+    }
+
+    // Try to find existing user by email
+    const { data: existingUser } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', customerEmail)
+      .maybeSingle()
+
+    if (existingUser) {
+      finalUserId = existingUser.id
+      console.log(`Found existing user by email: ${finalUserId}`)
+    } else {
+      // Guest purchase without account - store with null user_id
+      // They can claim it later by logging in with the same email
+      console.log(`Guest purchase - will store with email: ${maskedEmail}`)
+      finalUserId = null
+    }
+  }
+
+  // Insert purchase record(s)
+  if (isBundle && bundleItems) {
+    // Bundle purchase - grant access to all included ebooks
+    const items = JSON.parse(bundleItems) as string[]
+    
+    // Get ebook IDs from slugs
+    const { data: ebooks } = await (supabase as any)
+      .from('ebooks')
+      .select('id, slug')
+      .in('slug', items)
+
+    if (!ebooks || ebooks.length === 0) {
+      console.error('Bundle items not found:', items)
+      throw new Error('Bundle items not found')
+    }
+
+    // Insert bundle purchase (the main bundle ebook)
+    if (finalUserId) {
+      await (supabase as any)
+        .from('user_ebooks')
+        .upsert({
+          user_id: finalUserId,
+          ebook_id: ebookId,
+          stripe_session_id: session.id,
+          stripe_payment_id: session.payment_intent as string,
+          amount: amountTotal,
+        }, { onConflict: 'user_id,ebook_id' })
+
+      // Insert individual ebooks from bundle
+      for (const ebook of ebooks) {
+        await (supabase as any)
+          .from('user_ebooks')
+          .upsert({
+            user_id: finalUserId,
+            ebook_id: ebook.id,
+            stripe_session_id: session.id,
+            stripe_payment_id: session.payment_intent as string,
+            amount: 0, // Individual items in bundle have 0 cost
+          }, { onConflict: 'user_id,ebook_id' })
+      }
+
+      console.log(`✅ Bundle purchase recorded: ${ebooks.length + 1} ebooks for user ${finalUserId}`)
+    } else {
+      console.log(`⚠️ Guest bundle purchase - user needs to claim via email: ${maskedEmail}`)
+      // TODO: Store guest purchase for later claiming
+    }
   } else {
-    console.warn('No customer email available - skipping confirmation email')
+    // Single ebook purchase
+    if (finalUserId) {
+      const { error: insertError } = await (supabase as any)
+        .from('user_ebooks')
+        .upsert({
+          user_id: finalUserId,
+          ebook_id: ebookId,
+          stripe_session_id: session.id,
+          stripe_payment_id: session.payment_intent as string,
+          amount: amountTotal,
+        }, { onConflict: 'user_id,ebook_id' })
+
+      if (insertError) {
+        console.error('Failed to insert ebook purchase:', insertError)
+        throw insertError
+      }
+
+      console.log(`✅ E-Book purchase recorded: ${ebookSlug} for user ${finalUserId}`)
+    } else {
+      console.log(`⚠️ Guest ebook purchase - user needs to claim via email: ${maskedEmail}`)
+      // TODO: Store guest purchase for later claiming
+    }
+  }
+
+  // Send confirmation email (non-blocking)
+  if (customerEmail) {
+    try {
+      // Fetch ebook title
+      const { data: ebook } = await (supabase as any)
+        .from('ebooks')
+        .select('title')
+        .eq('id', ebookId)
+        .single()
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://auswanderer-plattform.de'
+      
+      // TODO: Create EbookPurchaseConfirmationEmail template
+      // For now, use a simple log
+      console.log(`📧 E-Book confirmation email would be sent to ${maskedEmail} for "${ebook?.title || ebookSlug}"`)
+      console.log(`   Download URL: ${appUrl}/ebooks`)
+      
+    } catch (emailError) {
+      console.error('Failed to send ebook confirmation email:', emailError)
+    }
+  }
+}
+
+/**
+ * Helper: Mask email for DSGVO-compliant logging
+ */
+function maskEmail(email: string | null | undefined): string {
+  if (!email) return 'N/A'
+  if (process.env.NODE_ENV !== 'production') return email
+  
+  const [local, domain] = email.split('@')
+  if (!local || !domain) return '***@***'
+  
+  const maskedLocal = local.substring(0, 2) + '***'
+  const domainParts = domain.split('.')
+  const maskedDomain = '***.' + (domainParts[domainParts.length - 1] || 'com')
+  return `${maskedLocal}@${maskedDomain}`
+}
+
+/**
+ * Helper: Validate payment amount with discount support
+ */
+function validatePaymentAmount(
+  amountTotal: number | null,
+  expectedPrice: number,
+  discountApplied: number
+): void {
+  if (!amountTotal || amountTotal < MINIMUM_AMOUNT) {
+    throw new Error(`Payment amount too low: ${amountTotal}`)
+  }
+
+  if (amountTotal !== expectedPrice) {
+    const amountBeforeDiscount = amountTotal + discountApplied
+    
+    if (amountBeforeDiscount !== expectedPrice) {
+      throw new Error(`Invalid payment amount: ${amountTotal}, expected: ${expectedPrice}`)
+    }
+    console.log(`Discount applied: ${discountApplied / 100}€ (original: ${expectedPrice / 100}€)`)
   }
 }
