@@ -1,23 +1,59 @@
 'use client'
 
 import { useEffect, useCallback, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAnalysisStore } from '@/stores'
 import { CRITERIA } from '@/lib/criteria'
 import { useQuestionTimer, useSessionTimer } from '@/hooks'
+import { useTestHelpers } from '@/lib/test-helpers'
 import { WelcomeScreen } from './WelcomeScreen'
 import { PreAnalysisForm } from './PreAnalysisForm'
 import { QuestionCard } from './QuestionCard'
+import { DynamicQuestionCard } from './DynamicQuestionCard'
+import { AdditionalNotesCard } from './AdditionalNotesCard'
 import { LoadingScreen } from './LoadingScreen'
 import { ProgressHeader } from './ProgressHeader'
+import type { AnalysisQuestionWithCategory } from '@/types/questions'
 
-export function AnalysisFlow() {
+interface AdditionalNotesSettings {
+  enabled: boolean
+  label: string
+  placeholder: string
+  required: boolean
+}
+
+interface AnalysisSettings {
+  additional_notes_field?: AdditionalNotesSettings
+}
+
+interface AnalysisFlowProps {
+  /** Questions loaded from database (SSR) */
+  initialQuestions?: AnalysisQuestionWithCategory[]
+  /** Settings loaded from database (SSR) */
+  initialSettings?: AnalysisSettings
+}
+
+export function AnalysisFlow({ initialQuestions, initialSettings }: AnalysisFlowProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isHydrated, setIsHydrated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [additionalNotes, setAdditionalNotes] = useState('')
+  const [showNotesStep, setShowNotesStep] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const analyticsSessionId = useRef<string | null>(null)
+  
+  // Initialize test helpers in development
+  useTestHelpers()
+  
+  // Additional notes settings
+  const notesSettings = initialSettings?.additional_notes_field || {
+    enabled: false,
+    label: 'Möchtest du uns noch etwas mitteilen?',
+    placeholder: 'z.B. Besondere Anforderungen, Hobbys, Familie...',
+    required: false,
+  }
   
   // Question timing for analytics
   const { startQuestion, endQuestion, questionTimes, averageTime, totalTime } = useQuestionTimer()
@@ -27,12 +63,23 @@ export function AnalysisFlow() {
     currentStep,
     currentCriterionIndex,
     ratings,
+    textNotes,
     setStep,
     setRating,
     nextCriterion,
     previousCriterion,
     setLoading,
+    reset,
   } = useAnalysisStore()
+
+  // Reset store if ?reset=1 query param is present
+  useEffect(() => {
+    if (searchParams.get('reset') === '1') {
+      reset()
+      // Remove the query param from URL
+      router.replace('/analyse')
+    }
+  }, [searchParams, reset, router])
 
   // Hydration check for Zustand persist
   useEffect(() => {
@@ -77,16 +124,27 @@ export function AnalysisFlow() {
     }
   }, [])
 
-  const currentCriterion = CRITERIA[currentCriterionIndex]
-  const totalCriteria = CRITERIA.length
-  const isLastQuestion = currentCriterionIndex >= totalCriteria - 1
+  // Use DB questions if available, fallback to hardcoded CRITERIA
+  const useDbQuestions = initialQuestions && initialQuestions.length > 0
+  const questions = useDbQuestions ? initialQuestions : null
+  const totalQuestions = useDbQuestions ? initialQuestions.length : CRITERIA.length
+  
+  // Current question (DB or legacy)
+  const currentDbQuestion = questions?.[currentCriterionIndex]
+  const currentCriterion = !useDbQuestions ? CRITERIA[currentCriterionIndex] : null
+  const isLastQuestion = currentCriterionIndex >= totalQuestions - 1
+
+  // Get question ID for tracking
+  const currentQuestionId = useDbQuestions 
+    ? (currentDbQuestion?.question_key || currentDbQuestion?.id || '')
+    : (currentCriterion?.id || '')
 
   // Start timing current question when it changes
   useEffect(() => {
-    if (currentStep === 'criteria' && currentCriterion) {
-      startQuestion(currentCriterion.id)
+    if (currentStep === 'criteria' && currentQuestionId) {
+      startQuestion(currentQuestionId)
     }
-  }, [currentStep, currentCriterion, startQuestion])
+  }, [currentStep, currentQuestionId, startQuestion])
 
   const handleStartAnalysis = useCallback(() => {
     setStep('pre-analysis')
@@ -127,7 +185,10 @@ export function AnalysisFlow() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          preAnalysis,
+          preAnalysis: {
+            ...preAnalysis,
+            additionalNotes: additionalNotes || undefined,
+          },
           ratings,
         }),
       })
@@ -167,35 +228,51 @@ export function AnalysisFlow() {
     }
   }, [router, setLoading, setStep, isSubmitting, questionTimes])
 
-  const handleRate = useCallback(
-    (rating: number) => {
+  // Handle answer (works for both DB questions and legacy CRITERIA)
+  const handleAnswer = useCallback(
+    (value: number | string | boolean | string[], textNote?: string) => {
       if (isSubmitting) return // Prevent interaction during submit
       
       // End timing for current question
-      endQuestion(currentCriterion.id)
+      endQuestion(currentQuestionId)
       
-      setRating(currentCriterion.id, rating)
+      // Store the rating/answer
+      // For DB questions, use question_key if available, otherwise id
+      const questionKey = useDbQuestions
+        ? (currentDbQuestion?.question_key || currentDbQuestion?.id || '')
+        : (currentCriterion?.id || '')
+      
+      // Store the answer with optional text note
+      setRating(questionKey, value, textNote)
 
       // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
 
-      // Auto-advance after 300ms
-      // Get fresh state in timeout to avoid stale closure
-      timeoutRef.current = setTimeout(() => {
-        const { currentCriterionIndex } = useAnalysisStore.getState()
-        const isLast = currentCriterionIndex >= CRITERIA.length - 1
-        
-        if (isLast) {
+      // Advance immediately (user clicked "Weiter")
+      const { currentCriterionIndex } = useAnalysisStore.getState()
+      const isLast = currentCriterionIndex >= totalQuestions - 1
+      
+      if (isLast) {
+        // Show additional notes step if enabled
+        if (notesSettings.enabled) {
+          setShowNotesStep(true)
+        } else {
           setStep('loading')
           submitAnalysis()
-        } else {
-          nextCriterion()
         }
-      }, 300)
+      } else {
+        nextCriterion()
+      }
     },
-    [currentCriterion, nextCriterion, setRating, setStep, submitAnalysis, isSubmitting, endQuestion]
+    [currentQuestionId, currentDbQuestion, currentCriterion, useDbQuestions, totalQuestions, nextCriterion, setRating, setStep, submitAnalysis, isSubmitting, endQuestion, notesSettings.enabled]
+  )
+
+  // Legacy handler for old QuestionCard
+  const handleRate = useCallback(
+    (rating: number) => handleAnswer(rating),
+    [handleAnswer]
   )
 
   const handleBack = useCallback(() => {
@@ -216,6 +293,28 @@ export function AnalysisFlow() {
     setStep('loading')
     submitAnalysis()
   }, [setStep, submitAnalysis])
+
+  // Handle additional notes submission
+  const handleNotesSubmit = useCallback((notes: string) => {
+    setAdditionalNotes(notes)
+    setShowNotesStep(false)
+    setStep('loading')
+    // Small delay to ensure state is updated before submit
+    setTimeout(() => submitAnalysis(), 50)
+  }, [setStep, submitAnalysis])
+
+  const handleNotesSkip = useCallback(() => {
+    setAdditionalNotes('')
+    setShowNotesStep(false)
+    setStep('loading')
+    setTimeout(() => submitAnalysis(), 50)
+  }, [setStep, submitAnalysis])
+
+  // Go back from notes to last question
+  const handleNotesBack = useCallback(() => {
+    setShowNotesStep(false)
+    // Stay on criteria step, user can navigate from there
+  }, [])
 
   // Show loading state until hydration
   if (!isHydrated) {
@@ -251,8 +350,8 @@ export function AnalysisFlow() {
       {currentStep === 'criteria' && (
         <ProgressHeader
           current={currentCriterionIndex}
-          total={totalCriteria}
-          category={currentCriterion?.category}
+          total={totalQuestions}
+          category={useDbQuestions ? currentDbQuestion?.category?.name_key : currentCriterion?.category}
           onBack={handleBack}
         />
       )}
@@ -267,13 +366,37 @@ export function AnalysisFlow() {
           <PreAnalysisForm onComplete={handlePreAnalysisComplete} />
         )}
 
-        {currentStep === 'criteria' && currentCriterion && (
-          <QuestionCard
-            criterion={currentCriterion}
-            questionNumber={currentCriterionIndex + 1}
-            totalQuestions={totalCriteria}
-            onRate={handleRate}
-            selectedRating={ratings[currentCriterion.id]}
+        {currentStep === 'criteria' && !showNotesStep && (
+          useDbQuestions && currentDbQuestion ? (
+            // Dynamic questions from database
+            <DynamicQuestionCard
+              question={currentDbQuestion}
+              questionNumber={currentCriterionIndex + 1}
+              totalQuestions={totalQuestions}
+              onAnswer={handleAnswer}
+              onBack={handleBack}
+              currentValue={ratings[currentDbQuestion.question_key || currentDbQuestion.id]}
+              currentTextNote={textNotes[currentDbQuestion.question_key || currentDbQuestion.id]}
+            />
+          ) : currentCriterion ? (
+            // Legacy hardcoded questions (fallback)
+            <QuestionCard
+              criterion={currentCriterion}
+              questionNumber={currentCriterionIndex + 1}
+              totalQuestions={totalQuestions}
+              onRate={handleRate}
+              selectedRating={ratings[currentCriterion.id]}
+            />
+          ) : null
+        )}
+
+        {/* Additional Notes Step */}
+        {showNotesStep && notesSettings.enabled && (
+          <AdditionalNotesCard
+            settings={notesSettings}
+            onSubmit={handleNotesSubmit}
+            onSkip={handleNotesSkip}
+            onBack={handleNotesBack}
           />
         )}
 

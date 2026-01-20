@@ -58,6 +58,7 @@ export function PreAnalysisForm({ onComplete }: PreAnalysisFormProps) {
               key={country}
               type="button"
               onClick={() => toggleCountry(country)}
+              data-testid={`analysis-preanalysis-country-${country.toLowerCase().replace(/[^a-z]/g, '')}`}
               className={`px-4 py-3 min-h-[44px] rounded-full text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                 selectedCountries.includes(country)
                   ? 'bg-primary-500 text-white'
@@ -81,6 +82,7 @@ export function PreAnalysisForm({ onComplete }: PreAnalysisFormProps) {
           value={specialWishes}
           onChange={(e) => setSpecialWishes(e.target.value)}
           placeholder={wishesQuestion.placeholder}
+          data-testid="analysis-preanalysis-wishes-input"
           className="w-full p-4 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
           rows={3}
         />
@@ -88,13 +90,19 @@ export function PreAnalysisForm({ onComplete }: PreAnalysisFormProps) {
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <button type="button" onClick={handleContinue} className="btn-cta">
+        <button 
+          type="button" 
+          onClick={handleContinue} 
+          className="btn-cta"
+          data-testid="analysis-preanalysis-continue-button"
+        >
           Weiter zu den Kriterien
         </button>
         <button
           type="button"
           onClick={handleSkip}
           className="text-slate-500 hover:text-slate-700 font-medium"
+          data-testid="analysis-preanalysis-skip-button"
         >
           Überspringen →
         </button>

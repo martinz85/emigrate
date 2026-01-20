@@ -1226,3 +1226,4 @@ print(r"Gespeichert unter: C:\Project A\Auswanderungsanalyse_2025_MIT_ZYPERN.doc
 
 
 
+

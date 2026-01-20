@@ -1,0 +1,13 @@
+﻿npx : Initialising login role...
+At C:\Users\martin.zaremski\AppData\Local\Temp\ps-script-99caee20-93c3-4c46-8e9c-cca70969ea02.ps1:84 char:113
++ ... 60d1f60acc272e37' ; npx supabase db dump --schema public 2>&1 | Out-F ...
++                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Initialising login role...:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Dumping schemas from remote database...
+failed to inspect docker image: error during connect: in the default daemon configuration on Windows, the docker client
+ must be run with elevated privileges to connect: Get "http://%2F%2F.%2Fpipe%2Fdocker_engine/v1.51/images/public.ecr.aw
+s/supabase/postgres:17.6.1.063/json": open //./pipe/docker_engine: The system cannot find the file specified.
+Docker Desktop is a prerequisite for local development. Follow the official docs to install: https://docs.docker.com/de
+sktop

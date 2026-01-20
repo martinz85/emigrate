@@ -14,8 +14,11 @@ export interface AnalysisState {
   // Pre-analysis data
   preAnalysis: PreAnalysisData
   
-  // Criteria ratings (criterion_id -> rating 1-5)
-  ratings: Record<string, number>
+  // Criteria ratings (criterion_id -> rating value)
+  ratings: Record<string, number | string | boolean | string[]>
+  
+  // Optional text notes per question (question_id -> note)
+  textNotes: Record<string, string>
   
   // Results
   isLoading: boolean
@@ -25,7 +28,7 @@ export interface AnalysisState {
   // Actions
   setStep: (step: AnalysisState['currentStep']) => void
   setPreAnalysis: (data: Partial<PreAnalysisData>) => void
-  setRating: (criterionId: string, rating: number) => void
+  setRating: (criterionId: string, rating: number | string | boolean | string[], textNote?: string) => void
   nextCriterion: () => void
   previousCriterion: () => void
   setLoading: (loading: boolean) => void
@@ -57,7 +60,8 @@ const initialState = {
     countriesOfInterest: [],
     specialWishes: '',
   },
-  ratings: {},
+  ratings: {} as Record<string, number | string | boolean | string[]>,
+  textNotes: {} as Record<string, string>,
   isLoading: false,
   analysisId: null,
   results: null,
@@ -75,9 +79,12 @@ export const useAnalysisStore = create<AnalysisState>()(
           preAnalysis: { ...state.preAnalysis, ...data },
         })),
 
-      setRating: (criterionId, rating) =>
+      setRating: (criterionId, rating, textNote) =>
         set((state) => ({
           ratings: { ...state.ratings, [criterionId]: rating },
+          textNotes: textNote !== undefined
+            ? { ...state.textNotes, [criterionId]: textNote }
+            : state.textNotes,
         })),
 
       nextCriterion: () =>
@@ -107,6 +114,7 @@ export const useAnalysisStore = create<AnalysisState>()(
       partialize: (state) => ({
         preAnalysis: state.preAnalysis,
         ratings: state.ratings,
+        textNotes: state.textNotes,
         currentCriterionIndex: state.currentCriterionIndex,
         // Don't persist 'loading' or 'complete' steps - on reload, go back to last answerable step
         currentStep: state.currentStep === 'loading' || state.currentStep === 'complete'

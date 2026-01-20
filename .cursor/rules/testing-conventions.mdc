@@ -1,0 +1,224 @@
+# Testing Conventions - Automatisierte UI-Tests
+
+## Übersicht
+
+Diese Regel definiert Konventionen für automatisierte UI-Tests mit Browser-Automation (Playwright, Cursor Browser Tools, etc.).
+
+## data-testid Konventionen
+
+### Namensschema
+
+```
+[bereich]-[komponente]-[element]-[variante]
+```
+
+**Beispiele:**
+- `analysis-welcome-start-button`
+- `analysis-question-back-button`
+- `admin-questions-new-button`
+- `admin-questions-table-row-{id}`
+
+### Bereiche (Prefixes)
+
+| Prefix | Bereich |
+|--------|---------|
+| `analysis-` | Analyse-Flow (Frontend) |
+| `admin-` | Admin Dashboard |
+| `auth-` | Login/Logout |
+| `nav-` | Navigation |
+| `modal-` | Dialoge/Modals |
+| `form-` | Formulare |
+
+### Komponenten-Typen
+
+| Suffix | Element-Typ |
+|--------|-------------|
+| `-button` | Buttons, Clickable Actions |
+| `-input` | Text-Inputs, Textareas |
+| `-select` | Dropdowns, Selects |
+| `-checkbox` | Checkboxen |
+| `-toggle` | Toggle-Switches |
+| `-link` | Navigation Links |
+| `-card` | Klickbare Karten |
+| `-row` | Tabellen-Zeilen |
+| `-modal` | Modal/Dialog Container |
+
+## Wichtige Test-IDs nach Bereich
+
+### Analysis Flow (`/analyse`)
+
+```typescript
+// Welcome Screen
+data-testid="analysis-welcome-start-button"      // "Los geht's!" Button
+
+// Pre-Analysis Form
+data-testid="analysis-preanalysis-country-{code}" // Länder-Buttons (z.B. "de", "pt")
+data-testid="analysis-preanalysis-continue-button"
+data-testid="analysis-preanalysis-skip-button"
+
+// Question Cards
+data-testid="analysis-question-card"
+data-testid="analysis-question-back-button"
+data-testid="analysis-question-info-button"
+data-testid="analysis-rating-{1-5}"              // Rating Buttons
+data-testid="analysis-boolean-yes"
+data-testid="analysis-boolean-no"
+data-testid="analysis-text-input"
+data-testid="analysis-text-submit"
+data-testid="analysis-select-option-{value}"
+
+// Additional Notes
+data-testid="analysis-notes-textarea"
+data-testid="analysis-notes-submit-button"
+data-testid="analysis-notes-skip-button"
+data-testid="analysis-notes-back-button"
+
+// Progress Header
+data-testid="analysis-progress-back-button"
+data-testid="analysis-progress-bar"
+data-testid="analysis-progress-counter"
+```
+
+### Admin Dashboard
+
+```typescript
+// Sidebar Navigation
+data-testid="admin-nav-{section}"                // z.B. "admin-nav-questions"
+
+// Questions Page
+data-testid="admin-questions-new-button"
+data-testid="admin-questions-categories-button"
+data-testid="admin-questions-filter-select"
+data-testid="admin-questions-table"
+data-testid="admin-questions-row-{id}"
+data-testid="admin-questions-toggle-{id}"        // Aktivieren/Deaktivieren
+data-testid="admin-questions-edit-{id}"
+data-testid="admin-questions-delete-{id}"
+
+// Question Form
+data-testid="admin-question-form"
+data-testid="admin-question-text-input"
+data-testid="admin-question-key-input"
+data-testid="admin-question-helptext-input"
+data-testid="admin-question-type-{type}"         // "rating", "boolean", etc.
+data-testid="admin-question-category-select"
+data-testid="admin-question-weight-slider"
+data-testid="admin-question-image-upload"
+data-testid="admin-question-required-checkbox"
+data-testid="admin-question-active-checkbox"
+data-testid="admin-question-submit-button"
+data-testid="admin-question-cancel-button"
+
+// Settings
+data-testid="admin-settings-notes-toggle"
+data-testid="admin-settings-notes-edit-button"
+data-testid="admin-settings-notes-label-input"
+data-testid="admin-settings-notes-placeholder-input"
+data-testid="admin-settings-notes-required-checkbox"
+data-testid="admin-settings-notes-save-button"
+```
+
+## Test-Helper (Window API)
+
+Im Development-Modus sind Test-Helper auf `window.__TEST__` verfügbar:
+
+```typescript
+// Verfügbare Methoden:
+window.__TEST__.resetAnalysis()           // Setzt Analyse-State zurück
+window.__TEST__.goToStep(step)            // Springt zu Step: 'welcome', 'pre-analysis', 'criteria', 'loading'
+window.__TEST__.setQuestionIndex(index)   // Springt zu Frage N
+window.__TEST__.getState()                // Gibt aktuellen State zurück
+window.__TEST__.clearStorage()            // Löscht LocalStorage
+```
+
+## Test-Workflow für Agents
+
+### 1. Vor dem Test
+```javascript
+// LocalStorage leeren
+await page.evaluate(() => window.__TEST__?.clearStorage() || localStorage.clear())
+
+// Oder: URL mit reset Parameter
+await page.goto('/analyse?reset=1')
+```
+
+### 2. Warten nach Navigation
+```javascript
+// IMMER 2-3 Sekunden warten nach Navigation (React Hydration)
+await page.waitForTimeout(3000)
+
+// Oder besser: Auf spezifisches Element warten
+await page.waitForSelector('[data-testid="analysis-welcome-start-button"]')
+```
+
+### 3. Interaktion
+```javascript
+// Klick mit data-testid (stabiler als Text-Suche)
+await page.click('[data-testid="analysis-welcome-start-button"]')
+
+// Eingabe
+await page.fill('[data-testid="analysis-notes-textarea"]', 'Test-Text')
+```
+
+### 4. Assertions
+```javascript
+// Prüfen ob Element sichtbar
+await expect(page.locator('[data-testid="analysis-question-card"]')).toBeVisible()
+
+// Prüfen ob Text vorhanden
+await expect(page.locator('[data-testid="analysis-progress-counter"]')).toContainText('1 / 28')
+```
+
+## API-Endpunkte für Tests
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|--------------|
+| GET | `/api/questions` | Aktive Fragen laden |
+| GET | `/api/settings` | Einstellungen laden |
+| GET | `/api/admin/questions` | Alle Fragen (Admin) |
+| POST | `/api/admin/questions` | Neue Frage erstellen |
+| PUT | `/api/admin/settings` | Einstellung ändern |
+
+## Beispiel: Vollständiger Test-Flow
+
+```typescript
+// Test: Analyse durchführen
+test('complete analysis flow', async ({ page }) => {
+  // 1. Reset & Navigate
+  await page.goto('/analyse?reset=1')
+  await page.waitForSelector('[data-testid="analysis-welcome-start-button"]')
+  
+  // 2. Start Analysis
+  await page.click('[data-testid="analysis-welcome-start-button"]')
+  await page.waitForSelector('[data-testid="analysis-preanalysis-continue-button"]')
+  
+  // 3. Skip Pre-Analysis
+  await page.click('[data-testid="analysis-preanalysis-skip-button"]')
+  await page.waitForSelector('[data-testid="analysis-question-card"]')
+  
+  // 4. Answer Questions (loop)
+  for (let i = 0; i < 28; i++) {
+    await page.click('[data-testid="analysis-rating-3"]') // Neutral rating
+    await page.waitForTimeout(500) // Wait for auto-advance
+  }
+  
+  // 5. Additional Notes (if enabled)
+  const notesVisible = await page.isVisible('[data-testid="analysis-notes-textarea"]')
+  if (notesVisible) {
+    await page.click('[data-testid="analysis-notes-skip-button"]')
+  }
+  
+  // 6. Wait for Results
+  await page.waitForURL(/\/ergebnis\//, { timeout: 60000 })
+  
+  // 7. Assert Results
+  await expect(page).toHaveURL(/\/ergebnis\/[a-z0-9-]+/)
+})
+```
+
+## Hinweise für Cursor Browser Tools
+
+1. **Immer `browser_snapshot` vor `browser_click`** - Referenzen können sich ändern
+2. **`browser_wait_for` mit 3+ Sekunden** nach Navigation
+3. **Bei "Element not found"**: Neuen Snapshot machen und Referenz aktualisieren
+4. **Für State-Reset**: `/analyse?reset=1` nutzen oder API aufrufen

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeEmigration, type AnalysisRequest } from '@/lib/ai'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import type { Json } from '@/lib/supabase/database.types'
 import { cookies } from 'next/headers'
 import { randomUUID } from 'crypto'
@@ -78,6 +78,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Load question weights from database for AI analysis
+    const adminSupabase = createAdminClient()
+    const { data: questions } = await adminSupabase
+      .from('analysis_questions')
+      .select('question_key, weight')
+      .eq('is_active', true)
+
+    // Build weight map (question_key -> weight)
+    const questionWeights: Record<string, number> = {}
+    if (questions) {
+      for (const q of questions) {
+        if (q.question_key) {
+          questionWeights[q.question_key] = q.weight
+        }
+      }
+    }
+
     // Transform the request to match the Claude API format
     const analysisRequest: AnalysisRequest = {
       criteriaRatings: ratings,
@@ -85,6 +102,7 @@ export async function POST(request: NextRequest) {
         countriesOfInterest: [],
         specialWishes: '',
       },
+      questionWeights, // Pass weights to AI for consideration
     }
 
     // Call Claude AI for analysis

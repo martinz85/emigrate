@@ -224,6 +224,20 @@ Administratoren können User, Preise und Kampagnen verwalten.
   - Top-Länder Statistik
   - Aktive PRO-Abos
 
+- Story 10.7: Fragen-Builder (Analysis Questions Management)
+  - Fragen erstellen, bearbeiten, löschen
+  - Reihenfolge per Drag & Drop ändern
+  - Gewichtung pro Frage festlegen
+  - Fragetyp auswählen:
+    - Ja/Nein (Boolean)
+    - Rating 1-5 (Skala)
+    - Text-Eingabe (Freitext)
+    - Auswahl/Dropdown (wie Länder-Selektion)
+  - Optionales Bild pro Frage hochladen (Supabase Storage)
+  - Fallback auf Standard-UI wenn kein Bild vorhanden
+  - Fragen-Kategorien verwalten
+  - Live-Vorschau der Frage
+
 **Datenbank-Tabellen (Supabase):**
 ```sql
 -- Admin-spezifische Tabellen
@@ -252,6 +266,35 @@ CREATE TABLE newsletter_subscribers (
   opted_in_at TIMESTAMPTZ DEFAULT NOW(),
   source TEXT, -- 'signup', 'purchase', 'landing'
   unsubscribed_at TIMESTAMPTZ
+);
+
+-- Fragen-Builder Tabellen (Story 10.7)
+CREATE TABLE question_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  description TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE analysis_questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id UUID REFERENCES question_categories(id) ON DELETE SET NULL,
+  question_text TEXT NOT NULL,
+  question_type TEXT NOT NULL CHECK (question_type IN ('boolean', 'rating', 'text', 'select')),
+  -- boolean = Ja/Nein, rating = 1-5 Skala, text = Freitext, select = Dropdown
+  weight DECIMAL(3,2) NOT NULL DEFAULT 1.00, -- Gewichtung 0.00 - 9.99
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  image_path TEXT, -- Supabase Storage Pfad, NULL = Standard-UI
+  is_required BOOLEAN NOT NULL DEFAULT TRUE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  -- Für select-Typ: JSON Array mit Optionen
+  select_options JSONB, -- z.B. [{"value": "de", "label": "Deutschland"}, ...]
+  -- Hilfetext für Info-Modal
+  help_text TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Ergänzung zu users Tabelle
@@ -825,4 +868,140 @@ damit Analysen zugeordnet werden können.
 **Then** wird ein Profil in der profiles Tabelle erstellt
 **And** subscription_tier ist initial "free"
 **And** Analysen werden mit user_id verknüpft
+
+---
+
+## Epic 10: Admin Dashboard - Detaillierte Stories
+
+### Story 10.7: Fragen-Builder (Analysis Questions Management)
+
+Als Admin,
+möchte ich Analyse-Fragen im Backend erstellen und verwalten können,
+damit ich die Analyse ohne Code-Änderungen anpassen kann.
+
+**Acceptance Criteria:**
+
+#### AC1: Fragen-Liste anzeigen
+**Given** ich bin als Admin eingeloggt
+**When** ich zu /admin/questions navigiere
+**Then** sehe ich eine Liste aller Analyse-Fragen
+**And** jede Frage zeigt: Text, Typ, Gewichtung, Kategorie, Status (aktiv/inaktiv)
+**And** die Liste ist nach Reihenfolge sortiert
+
+---
+
+#### AC2: Neue Frage erstellen
+**Given** ich bin auf der Fragen-Übersicht
+**When** ich auf "Neue Frage" klicke
+**Then** öffnet sich ein Formular mit folgenden Feldern:
+  - Frage-Text (Pflicht)
+  - Fragetyp-Auswahl (Pflicht)
+  - Gewichtung (1.00 - 5.00, Default: 1.00)
+  - Kategorie (Dropdown)
+  - Hilfetext (optional, für ℹ️ Modal)
+  - Bild hochladen (optional)
+  - Aktiv Ja/Nein
+**And** bei Typ "Auswahl" erscheint ein Feld für Optionen
+
+---
+
+#### AC3: Fragetypen konfigurieren
+**Given** ich erstelle eine neue Frage
+**When** ich den Fragetyp auswähle
+**Then** kann ich zwischen diesen Typen wählen:
+
+| Typ | Beschreibung | UI im Frontend |
+|-----|--------------|----------------|
+| `boolean` | Ja/Nein Frage | 2 Buttons |
+| `rating` | Bewertung 1-5 | 5 Buttons mit Emojis |
+| `text` | Freitext-Eingabe | Textarea |
+| `select` | Auswahl aus Liste | Dropdown/Multiselect |
+
+**And** bei `select` kann ich Optionen als JSON oder Liste eingeben
+
+---
+
+#### AC4: Reihenfolge ändern (Drag & Drop)
+**Given** ich bin auf der Fragen-Übersicht
+**When** ich eine Frage per Drag & Drop verschiebe
+**Then** wird die Reihenfolge sofort aktualisiert
+**And** die neue Reihenfolge wird in der DB gespeichert
+**And** die Änderung wirkt sich auf das Frontend aus
+
+---
+
+#### AC5: Gewichtung ändern
+**Given** ich bearbeite eine Frage
+**When** ich die Gewichtung ändere (z.B. von 1.00 auf 2.50)
+**Then** wird die neue Gewichtung gespeichert
+**And** die AI-Analyse berücksichtigt die Gewichtung
+
+---
+
+#### AC6: Bild hochladen (Optional)
+**Given** ich erstelle oder bearbeite eine Frage
+**When** ich ein Bild hochlade
+**Then** wird das Bild in Supabase Storage gespeichert
+**And** der Pfad wird in `image_path` gespeichert
+**And** im Frontend wird das Bild bei der Frage angezeigt
+**And** ohne Bild wird das Standard-UI (Emoji/Icon) verwendet
+
+**Technische Details:**
+- Bucket: `question-images`
+- Max. Größe: 2MB
+- Formate: JPG, PNG, WebP
+- Automatische Optimierung für Web
+
+---
+
+#### AC7: Frage deaktivieren
+**Given** ich möchte eine Frage temporär ausblenden
+**When** ich den "Aktiv"-Toggle auf "Aus" setze
+**Then** wird die Frage im Frontend nicht mehr angezeigt
+**And** bestehende Analysen bleiben unberührt
+**And** ich kann die Frage jederzeit reaktivieren
+
+---
+
+#### AC8: Kategorien verwalten
+**Given** ich möchte Fragen gruppieren
+**When** ich zu /admin/questions/categories navigiere
+**Then** kann ich Kategorien erstellen, bearbeiten, löschen
+**And** jede Kategorie hat: Name, Beschreibung, Reihenfolge
+**And** Fragen können einer Kategorie zugeordnet werden
+
+---
+
+#### AC9: Live-Vorschau
+**Given** ich bearbeite eine Frage
+**When** ich auf "Vorschau" klicke
+**Then** sehe ich wie die Frage im Frontend aussehen wird
+**And** die Vorschau zeigt das gewählte Bild (falls vorhanden)
+**And** die Vorschau zeigt den korrekten Fragetyp
+
+---
+
+#### AC10: Validierung
+**Given** ich speichere eine Frage
+**When** Pflichtfelder fehlen oder ungültig sind
+**Then** werden Fehlermeldungen angezeigt
+**And** das Formular wird nicht abgeschickt
+**And** der Fokus springt zum ersten Fehler
+
+---
+
+**Technische Umsetzung:**
+
+| Komponente | Technologie |
+|------------|-------------|
+| Drag & Drop | `@dnd-kit/core` oder `react-beautiful-dnd` |
+| Bild-Upload | Supabase Storage + `react-dropzone` |
+| Formular | React Hook Form + Zod Validation |
+| State | Server Actions oder tRPC |
+
+**Abhängigkeiten:**
+- Story 10.1 (Admin Auth) muss fertig sein
+- Supabase Storage Bucket muss eingerichtet werden
+
+**Priorität:** MVP-kritisch (ermöglicht Fragen-Anpassung ohne Deploy)
 

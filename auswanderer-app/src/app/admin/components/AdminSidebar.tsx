@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
   { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
   { href: '/admin/users', label: 'User', icon: '👥' },
+  { href: '/admin/questions', label: 'Fragen', icon: '❓' },
   { href: '/admin/prices', label: 'Preise', icon: '💰' },
   { href: '/admin/discounts', label: 'Rabattcodes', icon: '🎟️' },
   { href: '/admin/newsletter', label: 'Newsletter', icon: '📧' },
@@ -25,8 +26,8 @@ export function AdminSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 min-h-[calc(100vh-64px)] bg-white border-r border-slate-200">
-      <nav className="p-4">
+    <aside className="w-64 min-h-[calc(100vh-64px)] bg-white border-r border-slate-200 flex flex-col">
+      <nav className="p-4 flex-1">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href || 
@@ -53,8 +54,8 @@ export function AdminSidebar() {
         </ul>
       </nav>
       
-      <div className="absolute bottom-4 left-4 right-4 p-4 bg-slate-50 rounded-lg">
-        <p className="text-xs text-slate-500">
+      <div className="p-4 border-t border-slate-100">
+        <p className="text-xs text-slate-400 text-center">
           Admin Dashboard v1.0
         </p>
       </div>

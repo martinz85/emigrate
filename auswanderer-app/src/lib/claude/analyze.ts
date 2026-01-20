@@ -15,6 +15,8 @@ export interface AnalysisRequest {
     climatePref?: string
     naturePref?: string
   }
+  /** Question weights from database (question_key -> weight) */
+  questionWeights?: Record<string, number>
 }
 
 export interface CountryScore {
@@ -112,7 +114,7 @@ export async function analyzeEmigration(
 }
 
 function buildAnalysisPrompt(request: AnalysisRequest): string {
-  const { criteriaRatings, preAnalysis, userProfile } = request
+  const { criteriaRatings, preAnalysis, userProfile, questionWeights } = request
   
   let prompt = `Analysiere folgendes Nutzerprofil für die Auswanderung:
 
@@ -136,10 +138,18 @@ function buildAnalysisPrompt(request: AnalysisRequest): string {
   if (userProfile?.climatePref) prompt += `- Klima-Präferenz: ${userProfile.climatePref}\n`
   if (userProfile?.naturePref) prompt += `- Natur-Präferenz: ${userProfile.naturePref}\n`
 
-  prompt += `\n## Kriterien-Gewichtungen (1=egal, 5=sehr wichtig):\n`
+  prompt += `\n## Kriterien-Gewichtungen (Nutzer-Rating 1-5, Admin-Gewicht als Multiplikator):\n`
   
   for (const [criterionId, rating] of Object.entries(criteriaRatings)) {
-    prompt += `- ${criterionId}: ${rating}\n`
+    // Apply admin-configured weight multiplier if available
+    const adminWeight = questionWeights?.[criterionId] ?? 1.0
+    const effectiveWeight = rating * adminWeight
+    
+    if (adminWeight !== 1.0) {
+      prompt += `- ${criterionId}: Nutzer=${rating}, Admin-Gewicht=${adminWeight}x, Effektiv=${effectiveWeight.toFixed(1)}\n`
+    } else {
+      prompt += `- ${criterionId}: ${rating}\n`
+    }
   }
 
   prompt += `\n## Aufgabe:

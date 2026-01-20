@@ -47,6 +47,7 @@ export function RatingButtons({ onSelect, selectedValue }: RatingButtonsProps) {
             role="radio"
             aria-checked={isSelected}
             aria-label={`Bewertung ${value} von 5: ${label}`}
+            data-testid={`analysis-rating-${value}`}
             className={`
               flex flex-col items-center justify-center
               w-14 h-14 sm:w-16 sm:h-16 

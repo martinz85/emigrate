@@ -39,7 +39,11 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
       </div>
 
       {/* CTA Button */}
-      <button onClick={onStart} className="btn-cta text-xl px-10 py-5">
+      <button 
+        onClick={onStart} 
+        className="btn-cta text-xl px-10 py-5"
+        data-testid="analysis-welcome-start-button"
+      >
         Los geht&apos;s! 🚀
       </button>
 
