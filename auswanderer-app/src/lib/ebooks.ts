@@ -1,6 +1,9 @@
 // E-Book Definitions and Types
 // Story 7.1 - E-Book Landing Page
+// This file is CLIENT-SAFE - no server imports!
+// For database functions, use ebooks.server.ts
 
+// Legacy interface for backward compatibility with hardcoded data
 export interface Ebook {
   id: string
   slug: string
@@ -18,6 +21,8 @@ export interface Ebook {
   isBundle?: boolean
   bundleItems?: string[] // slugs of included ebooks
   stripePriceId?: string // To be set after Stripe product creation
+  pdfPath?: string // Supabase Storage path
+  coverPath?: string // Supabase Storage path
 }
 
 export const EBOOKS: Ebook[] = [
@@ -177,7 +182,7 @@ Einzeln würden diese E-Books 57,96€ kosten – spare mit dem Bundle über 30%
   bundleItems: ['langversion', 'kurzversion', 'tips-tricks', 'dummies'],
 }
 
-// Helper functions
+// Helper functions (CLIENT-SAFE)
 export function getEbookBySlug(slug: string): Ebook | undefined {
   if (slug === 'bundle') return EBOOK_BUNDLE
   return EBOOKS.find(ebook => ebook.slug === slug)
@@ -208,4 +213,3 @@ export function getBundleSavings(): { originalPrice: number; savings: number; sa
   
   return { originalPrice, savings, savingsPercent }
 }
-

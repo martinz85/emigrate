@@ -130,6 +130,8 @@ export interface AnalysisRequest {
     climatePref?: string
     naturePref?: string
   }
+  /** Question weights from database (question_key -> weight) */
+  questionWeights?: Record<string, number>
 }
 
 export interface CountryScore {

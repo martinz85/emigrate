@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { QuestionForm } from '../QuestionForm'
 import { notFound } from 'next/navigation'
+import type { AnalysisQuestion, QuestionCategory } from '@/types/questions'
 
 export const metadata = {
   title: 'Frage bearbeiten | Admin',
@@ -19,21 +20,26 @@ export default async function EditQuestionPage({ params }: PageProps) {
   const supabase = createAdminClient()
 
   // Fetch question
-  const { data: question, error } = await supabase
+  const { data: questionData, error } = await supabase
     .from('analysis_questions')
     .select('*')
     .eq('id', id)
     .single()
 
-  if (error || !question) {
+  if (error || !questionData) {
     notFound()
   }
 
+  // Cast to proper type (Supabase returns question_type as string)
+  const question = questionData as unknown as AnalysisQuestion
+
   // Fetch categories for dropdown
-  const { data: categories } = await supabase
+  const { data: categoriesData } = await supabase
     .from('question_categories')
     .select('*')
     .order('sort_order', { ascending: true })
+
+  const categories = (categoriesData || []) as QuestionCategory[]
 
   return (
     <div>
@@ -46,7 +52,7 @@ export default async function EditQuestionPage({ params }: PageProps) {
 
       <QuestionForm 
         question={question} 
-        categories={categories || []} 
+        categories={categories} 
       />
     </div>
   )

@@ -2,7 +2,7 @@
 story_id: "8.2"
 title: "Subscription Checkout"
 epic: "Epic 8 - PRO Subscription"
-status: ready-for-dev
+status: in-progress
 created: 2026-01-19
 created_by: Bob (SM)
 priority: high

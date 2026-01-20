@@ -37,6 +37,22 @@ export type AuditAction =
   | 'DISCOUNT_DELETED'
   | 'NEWSLETTER_EXPORTED'
   | 'PRICE_UPDATED'
+  | 'QUESTION_CREATED'
+  | 'QUESTION_UPDATED'
+  | 'QUESTION_DELETED'
+  | 'QUESTIONS_REORDERED'
+  | 'QUESTION_IMAGE_UPLOADED'
+  | 'QUESTION_IMAGE_DELETED'
+  | 'CATEGORY_CREATED'
+  | 'CATEGORY_UPDATED'
+  | 'CATEGORY_DELETED'
+  | 'CATEGORIES_REORDERED'
+  | 'EBOOK_CREATED'
+  | 'EBOOK_UPDATED'
+  | 'EBOOK_DELETED'
+  | 'EBOOK_PDF_UPLOADED'
+  | 'EBOOK_COVER_UPLOADED'
+  | 'EBOOKS_REORDERED'
 
 /**
  * Target types for audit logs
@@ -46,6 +62,9 @@ export type AuditTargetType =
   | 'discount_code'
   | 'newsletter'
   | 'price'
+  | 'analysis_question'
+  | 'question_category'
+  | 'ebook'
 
 /**
  * Audit log entry

@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { QuestionTable } from './QuestionTable'
 import { AnalysisSettings } from './AnalysisSettings'
 import Link from 'next/link'
+import type { AnalysisQuestionWithCategory, QuestionCategory } from '@/types/questions'
 
 export const metadata = {
   title: 'Fragen verwalten | Admin',
@@ -23,7 +24,7 @@ export default async function QuestionsPage({ searchParams }: PageProps) {
   const supabase = createAdminClient()
 
   // Fetch questions with categories
-  const { data: questions, error: questionsError } = await supabase
+  const { data: questionsData, error: questionsError } = await supabase
     .from('analysis_questions')
     .select(`
       *,
@@ -31,11 +32,16 @@ export default async function QuestionsPage({ searchParams }: PageProps) {
     `)
     .order('sort_order', { ascending: true })
 
+  // Cast to proper type (Supabase returns question_type as string)
+  const questions = (questionsData || []) as unknown as AnalysisQuestionWithCategory[]
+
   // Fetch categories for filter/create
-  const { data: categories } = await supabase
+  const { data: categoriesData } = await supabase
     .from('question_categories')
     .select('*')
     .order('sort_order', { ascending: true })
+
+  const categories = (categoriesData || []) as QuestionCategory[]
 
   // Fetch settings for additional notes field
   const { data: settingsData } = await supabase
@@ -112,8 +118,8 @@ export default async function QuestionsPage({ searchParams }: PageProps) {
       ) : (
         <QuestionTable 
           key={updateKey}
-          questions={questions || []} 
-          categories={categories || []}
+          questions={questions} 
+          categories={categories}
         />
       )}
     </div>

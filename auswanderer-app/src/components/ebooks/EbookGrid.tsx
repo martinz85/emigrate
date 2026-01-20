@@ -26,8 +26,8 @@ export function EbookGrid({ isPro = false, purchasedEbooks = [], onBuy }: EbookG
 
   return (
     <div className="space-y-12">
-      {/* E-Books Grid - 1 col mobile, 2 col tablet, 4 col desktop */}
-      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-8">
+      {/* E-Books Grid - responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {EBOOKS.map((ebook) => (
           <EbookCard
             key={ebook.id}

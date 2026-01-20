@@ -526,7 +526,7 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
           helpText={formData.help_text}
           selectOptions={formData.select_options}
           imagePath={imagePath}
-          categoryIcon={categories.find(c => c.id === formData.category_id)?.icon}
+          categoryIcon={categories.find(c => c.id === formData.category_id)?.icon ?? undefined}
           allowTextInput={formData.allow_text_input}
           textInputLabel={formData.text_input_label}
           textInputPlaceholder={formData.text_input_placeholder}

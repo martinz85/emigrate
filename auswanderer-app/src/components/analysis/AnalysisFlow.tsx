@@ -351,7 +351,7 @@ export function AnalysisFlow({ initialQuestions, initialSettings }: AnalysisFlow
         <ProgressHeader
           current={currentCriterionIndex}
           total={totalQuestions}
-          category={useDbQuestions ? currentDbQuestion?.category?.name_key : currentCriterion?.category}
+          category={(useDbQuestions ? currentDbQuestion?.category?.name_key : currentCriterion?.category) ?? undefined}
           onBack={handleBack}
         />
       )}
@@ -385,7 +385,7 @@ export function AnalysisFlow({ initialQuestions, initialSettings }: AnalysisFlow
               questionNumber={currentCriterionIndex + 1}
               totalQuestions={totalQuestions}
               onRate={handleRate}
-              selectedRating={ratings[currentCriterion.id]}
+              selectedRating={typeof ratings[currentCriterion.id] === 'number' ? ratings[currentCriterion.id] as number : undefined}
             />
           ) : null
         )}

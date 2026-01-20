@@ -3,6 +3,7 @@ import { createAdminClient, createClient } from '@/lib/supabase/server'
 import { logAuditEvent } from '@/lib/audit'
 import { z } from 'zod'
 import type { AnalysisQuestionWithCategory, CreateQuestionInput } from '@/types/questions'
+import type { Json } from '@/lib/supabase/database.types'
 
 // ============================================
 // Validation Schema
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     const parseResult = createQuestionSchema.safeParse(body)
     if (!parseResult.success) {
-      const errors = parseResult.error.errors.map(e => e.message).join(', ')
+      const errors = parseResult.error.issues.map(e => e.message).join(', ')
       return NextResponse.json({ error: errors }, { status: 400 })
     }
 
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
       question_key: input.question_key || null,
       help_text: input.help_text || null,
       question_type: input.question_type,
-      select_options: input.select_options || null,
+      select_options: (input.select_options as Json) || null,
       weight: input.weight ?? 1.00,
       sort_order: input.sort_order,
       image_path: input.image_path || null,

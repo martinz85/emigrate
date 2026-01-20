@@ -131,6 +131,7 @@ development_status:
   10-5-newsletter-export: done        # CSV/JSON export ✅
   10-6-dashboard-analytics: done      # Revenue, conversions, stats ✅
   10-7-questions-builder: done        # Fragen-Builder: CRUD, Drag&Drop, Bild-Upload, Preview ✅
+  10-8-ebook-management: in-progress      # ⚠️ CRITICAL: E-Book CRUD, PDF-Upload, Stripe-Sync (blocks 7.2) - Code complete, pending migration
   epic-10-retrospective: optional
 
   # ============================================
@@ -140,13 +141,13 @@ development_status:
   # Epic 7: E-Book Integration (Post-MVP)
   epic-7: in-progress
   7-1-ebook-landing-page: done             # ✅ Code Review completed, fixes applied
-  7-2-ebook-checkout: ready-for-dev        # ✅ Story created by Bob (SM)
+  7-2-ebook-checkout: blocked               # ⏸️ BLOCKED by 10.8 (E-Book Management)
   7-3-ebook-download: ready-for-dev        # ✅ Story created by Bob (SM)
 
   # Epic 8: PRO Subscription (Post-MVP)
   epic-8: in-progress
   8-1-subscription-plans: done             # ✅ Code Review completed, fixes applied
-  8-2-subscription-checkout: ready-for-dev # ✅ Story created by Bob (SM)
+  8-2-subscription-checkout: in-progress   # ✅ Story created by Bob (SM), handed over to Amelia
   8-3-subscription-management: ready-for-dev # ✅ Story created by Bob (SM)
 
   # Epic 11: Technical Improvements (Post-MVP, from Code Reviews)

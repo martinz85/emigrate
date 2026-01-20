@@ -6,15 +6,17 @@ import { CATEGORY_LABELS, CATEGORY_ICONS, type CriterionCategory } from '@/lib/c
 interface ProgressHeaderProps {
   current: number
   total: number
-  category?: CriterionCategory
+  category?: CriterionCategory | string
   onBack: () => void
 }
 
 export function ProgressHeader({ current, total, category, onBack }: ProgressHeaderProps) {
   // Use (current + 1) so that question 1 shows some progress, not 0%
   const percentage = ((current + 1) / total) * 100
-  const categoryLabel = category ? CATEGORY_LABELS[category] : ''
-  const categoryIcon = category ? CATEGORY_ICONS[category] : ''
+  // Cast to CriterionCategory to access labels/icons (fallback for unknown categories)
+  const categoryKey = category as CriterionCategory | undefined
+  const categoryLabel = categoryKey ? (CATEGORY_LABELS[categoryKey] || category) : ''
+  const categoryIcon = categoryKey ? (CATEGORY_ICONS[categoryKey] || '') : ''
 
   return (
     <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-100">
