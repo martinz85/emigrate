@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendEmail, PurchaseConfirmationEmail, EbookPurchaseConfirmationEmail } from '@/lib/email'
-import { insertGuestPurchase, getEbooksBySlugs, upsertUserEbook } from '@/lib/supabase/ebooks-queries'
+import { 
+  insertGuestPurchase, 
+  getEbooksBySlugs, 
+  upsertUserEbook,
+  getWebhookEvent,
+  insertWebhookEvent,
+  updateWebhookEvent,
+} from '@/lib/supabase/ebooks-queries'
 
 // Initialize Stripe with secret key
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -63,19 +70,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // ============================================
+    // IDEMPOTENCY CHECK: Prevent duplicate processing
+    // ============================================
+    const supabase = createAdminClient()
+    
+    // Check if this event was already processed
+    const { data: existingEvent } = await getWebhookEvent(supabase, event.id)
+
+    if (existingEvent) {
+      console.log(`⚠️ Duplicate webhook event ${event.id} - already processed (${existingEvent.status})`)
+      return NextResponse.json({ 
+        received: true, 
+        duplicate: true,
+        original_status: existingEvent.status 
+      })
+    }
+
+    // Record the event BEFORE processing (to handle race conditions)
+    const { error: insertError } = await insertWebhookEvent(supabase, {
+      id: event.id,
+      event_type: event.type,
+      status: 'processing',
+    })
+
+    if (insertError) {
+      // If insert fails due to unique constraint, another process is handling it
+      const errorCode = (insertError as any)?.code
+      if (errorCode === '23505') { // unique_violation
+        console.log(`⚠️ Concurrent webhook processing detected for ${event.id}`)
+        return NextResponse.json({ received: true, concurrent: true })
+      }
+      console.error('Failed to record webhook event:', insertError)
+      // Continue processing anyway - don't fail due to logging issues
+    }
+
     // Handle the event
+    let processingError: Error | null = null
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         try {
           await handleCheckoutCompleted(session)
         } catch (dbError) {
-          // Return 500 so Stripe retries the webhook
+          processingError = dbError instanceof Error ? dbError : new Error(String(dbError))
           console.error('Database error processing checkout:', dbError)
-          return NextResponse.json(
-            { error: 'Database error, please retry' },
-            { status: 500 }
-          )
         }
         break
       }
@@ -94,6 +134,21 @@ export async function POST(request: NextRequest) {
 
       default:
         console.log(`Unhandled event type: ${event.type}`)
+    }
+
+    // Update event status after processing
+    await updateWebhookEvent(supabase, event.id, {
+      status: processingError ? 'failed' : 'success',
+      error_message: processingError?.message,
+      processed_at: new Date().toISOString(),
+    })
+
+    // If processing failed, return 500 so Stripe retries
+    if (processingError) {
+      return NextResponse.json(
+        { error: 'Processing failed, please retry' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ received: true })
@@ -324,10 +379,7 @@ async function handleEbookPurchase(session: Stripe.Checkout.Session) {
     const items = JSON.parse(bundleItems) as string[]
     
     // Get ebook IDs from slugs
-    const { data: ebooks } = await (supabase as any)
-      .from('ebooks')
-      .select('id, slug')
-      .in('slug', items)
+    const { data: ebooks } = await getEbooksBySlugs(supabase, items)
 
     if (!ebooks || ebooks.length === 0) {
       console.error('Bundle items not found:', items)
@@ -336,27 +388,23 @@ async function handleEbookPurchase(session: Stripe.Checkout.Session) {
 
     // Insert bundle purchase (the main bundle ebook)
     if (finalUserId) {
-      await (supabase as any)
-        .from('user_ebooks')
-        .upsert({
-          user_id: finalUserId,
-          ebook_id: ebookId,
-          stripe_session_id: session.id,
-          stripe_payment_id: session.payment_intent as string,
-          amount: amountTotal,
-        }, { onConflict: 'user_id,ebook_id' })
+      await upsertUserEbook(supabase, {
+        user_id: finalUserId,
+        ebook_id: ebookId,
+        stripe_session_id: session.id,
+        stripe_payment_id: session.payment_intent as string || undefined,
+        amount: amountTotal || 0,
+      })
 
       // Insert individual ebooks from bundle
       for (const ebook of ebooks) {
-        await (supabase as any)
-          .from('user_ebooks')
-          .upsert({
-            user_id: finalUserId,
-            ebook_id: ebook.id,
-            stripe_session_id: session.id,
-            stripe_payment_id: session.payment_intent as string,
-            amount: 0, // Individual items in bundle have 0 cost
-          }, { onConflict: 'user_id,ebook_id' })
+        await upsertUserEbook(supabase, {
+          user_id: finalUserId,
+          ebook_id: ebook.id,
+          stripe_session_id: session.id,
+          stripe_payment_id: session.payment_intent as string || undefined,
+          amount: 0, // Individual items in bundle have 0 cost
+        })
       }
 
       console.log(`✅ Bundle purchase recorded: ${ebooks.length + 1} ebooks for user ${finalUserId}`)

@@ -140,21 +140,25 @@ export async function findBundlesContainingSlug(
 }
 
 /**
- * Check if user owns any of the given ebook IDs
+ * Check if user owns any of the given ebook IDs (bundles)
+ * Returns first match - we only need to know if ANY bundle was purchased
  */
 export async function checkUserOwnsBundles(
   supabase: SupabaseClient,
   userId: string,
   bundleIds: string[]
 ): Promise<{ data: { id: string } | null; error: Error | null }> {
+  // Use limit(1) instead of maybeSingle() to avoid errors with multiple matches
   const result = await supabase
     .from('user_ebooks')
     .select('id')
     .eq('user_id', userId)
     .in('ebook_id', bundleIds)
-    .maybeSingle()
+    .limit(1)
 
-  return result as { data: { id: string } | null; error: Error | null }
+  // Return first match or null
+  const data = result.data && result.data.length > 0 ? result.data[0] : null
+  return { data, error: result.error }
 }
 
 /**
@@ -270,5 +274,72 @@ export async function getUnclaimedGuestPurchases(
     .is('claimed_at', null)
 
   return result as { data: GuestPurchase[] | null; error: Error | null }
+}
+
+// ============================================
+// Webhook Idempotency Functions
+// ============================================
+
+export interface WebhookEvent {
+  id: string
+  event_type: string
+  processed_at: string
+  status: string
+  error_message: string | null
+  created_at: string
+}
+
+/**
+ * Check if a webhook event was already processed
+ */
+export async function getWebhookEvent(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<{ data: { id: string; status: string } | null; error: Error | null }> {
+  const result = await supabase
+    .from('webhook_events')
+    .select('id, status')
+    .eq('id', eventId)
+    .maybeSingle()
+
+  return result as { data: { id: string; status: string } | null; error: Error | null }
+}
+
+/**
+ * Record a webhook event (for idempotency)
+ */
+export async function insertWebhookEvent(
+  supabase: SupabaseClient,
+  data: {
+    id: string
+    event_type: string
+    status: string
+  }
+): Promise<{ error: Error | null }> {
+  const result = await supabase
+    .from('webhook_events')
+    .insert(data)
+
+  return { error: result.error }
+}
+
+/**
+ * Update webhook event status after processing
+ */
+export async function updateWebhookEvent(
+  supabase: SupabaseClient,
+  eventId: string,
+  data: {
+    status: string
+    error_message?: string | null
+    processed_at?: string
+  }
+): Promise<{ error: Error | null }> {
+  const result = await supabase
+    .from('webhook_events')
+    .update(data)
+    .eq('id', eventId)
+
+  return { error: result.error }
 }
 
