@@ -132,10 +132,6 @@ export async function POST(request: NextRequest) {
       input.sort_order = (maxOrder?.sort_order ?? 0) + 1
     }
 
-    // Debug log
-    console.log('[API] POST question - input:', input)
-    console.log('[API] POST question - allow_text_input:', input.allow_text_input)
-
     // Insert question
     const insertData = {
       category_id: input.category_id || null,
@@ -154,7 +150,6 @@ export async function POST(request: NextRequest) {
       text_input_label: input.text_input_label || null,
       text_input_placeholder: input.text_input_placeholder || null,
     }
-    console.log('[API] POST question - insertData:', insertData)
 
     const { data: question, error: insertError } = await supabase
       .from('analysis_questions')

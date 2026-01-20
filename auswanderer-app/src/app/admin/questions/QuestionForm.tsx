@@ -33,10 +33,6 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
   const router = useRouter()
   const isEditing = !!question
 
-  // Debug: Log question data on load
-  console.log('[QuestionForm] Loaded question:', question)
-  console.log('[QuestionForm] allow_text_input from DB:', question?.allow_text_input)
-
   // Form state
   const [formData, setFormData] = useState({
     question_text: question?.question_text || '',
@@ -146,11 +142,25 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
     }))
   }
 
+  // Check for duplicate select option values
+  const hasDuplicateOptions = () => {
+    if (formData.question_type !== 'select') return false
+    const values = formData.select_options.map(opt => opt.value.trim().toLowerCase())
+    return values.some((val, i) => val && values.indexOf(val) !== i)
+  }
+
   // Submit form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
+
+    // Validate select options for duplicates
+    if (hasDuplicateOptions()) {
+      setError('Doppelte Werte in den Auswahloptionen gefunden. Bitte korrigieren.')
+      setIsSubmitting(false)
+      return
+    }
 
     try {
       const payload = {
@@ -166,13 +176,9 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
         text_input_placeholder: formData.allow_text_input ? formData.text_input_placeholder : null,
       }
 
-      console.log('[QuestionForm] Submitting payload:', payload)
-
       const url = isEditing 
         ? `/api/admin/questions/${question.id}`
         : '/api/admin/questions'
-
-      console.log('[QuestionForm] URL:', url, 'Method:', isEditing ? 'PATCH' : 'POST')
 
       const response = await fetch(url, {
         method: isEditing ? 'PATCH' : 'POST',
@@ -181,7 +187,6 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
       })
 
       const data = await response.json()
-      console.log('[QuestionForm] Response:', response.status, data)
 
       if (!response.ok) {
         throw new Error(data.error || 'Fehler beim Speichern')

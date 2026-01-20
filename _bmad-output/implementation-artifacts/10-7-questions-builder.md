@@ -119,54 +119,54 @@ Aktuell sind die 28 Kriterien hardcoded in `src/lib/criteria.ts`. Dieses Feature
 ## Tasks / Subtasks
 
 ### Task 1: Database Migration (AC: alle)
-- [ ] 1.1 Migration erstellen: `question_categories` Tabelle
-- [ ] 1.2 Migration erstellen: `analysis_questions` Tabelle
-- [ ] 1.3 RLS Policies für Admin-Zugriff
-- [ ] 1.4 Supabase Storage Bucket `question-images` erstellen
-- [ ] 1.5 Migration auf DEV deployen und testen
+- [x] 1.1 Migration erstellen: `question_categories` Tabelle
+- [x] 1.2 Migration erstellen: `analysis_questions` Tabelle
+- [x] 1.3 RLS Policies für Admin-Zugriff
+- [x] 1.4 Supabase Storage Bucket `question-images` erstellen
+- [x] 1.5 Migration auf DEV deployen und testen
 
 ### Task 2: API Routes (AC: 1,2,3,5,6,7)
-- [ ] 2.1 `GET /api/admin/questions` - Liste aller Fragen
-- [ ] 2.2 `POST /api/admin/questions` - Neue Frage erstellen
-- [ ] 2.3 `PATCH /api/admin/questions/[id]` - Frage bearbeiten
-- [ ] 2.4 `DELETE /api/admin/questions/[id]` - Frage löschen
-- [ ] 2.5 `PATCH /api/admin/questions/reorder` - Reihenfolge aktualisieren
-- [ ] 2.6 `POST /api/admin/questions/upload` - Bild hochladen
+- [x] 2.1 `GET /api/admin/questions` - Liste aller Fragen
+- [x] 2.2 `POST /api/admin/questions` - Neue Frage erstellen
+- [x] 2.3 `PATCH /api/admin/questions/[id]` - Frage bearbeiten
+- [x] 2.4 `DELETE /api/admin/questions/[id]` - Frage löschen
+- [x] 2.5 `PATCH /api/admin/questions/reorder` - Reihenfolge aktualisieren
+- [x] 2.6 `POST /api/admin/questions/upload` - Bild hochladen
 
 ### Task 3: Categories API (AC: 8)
-- [ ] 3.1 `GET /api/admin/questions/categories` - Liste
-- [ ] 3.2 `POST /api/admin/questions/categories` - Erstellen
-- [ ] 3.3 `PATCH /api/admin/questions/categories/[id]` - Bearbeiten
-- [ ] 3.4 `DELETE /api/admin/questions/categories/[id]` - Löschen
+- [x] 3.1 `GET /api/admin/questions/categories` - Liste
+- [x] 3.2 `POST /api/admin/questions/categories` - Erstellen
+- [x] 3.3 `PATCH /api/admin/questions/categories/[id]` - Bearbeiten
+- [x] 3.4 `DELETE /api/admin/questions/categories/[id]` - Löschen
 
 ### Task 4: Admin UI - Questions Page (AC: 1,4,7)
-- [ ] 4.1 `src/app/admin/questions/page.tsx` - Hauptseite
-- [ ] 4.2 `QuestionTable.tsx` - Sortierbare Tabelle mit Drag & Drop
-- [ ] 4.3 Status-Toggle inline (aktiv/inaktiv)
-- [ ] 4.4 Sidebar-Eintrag in `AdminSidebar.tsx`
+- [x] 4.1 `src/app/admin/questions/page.tsx` - Hauptseite
+- [x] 4.2 `QuestionTable.tsx` - Sortierbare Tabelle mit Drag & Drop
+- [x] 4.3 Status-Toggle inline (aktiv/inaktiv)
+- [x] 4.4 Sidebar-Eintrag in `AdminSidebar.tsx`
 
 ### Task 5: Admin UI - Question Form (AC: 2,3,5,6,9,10)
-- [ ] 5.1 `QuestionForm.tsx` - Formular-Komponente
-- [ ] 5.2 `ImageUploader.tsx` - Dropzone für Bilder
-- [ ] 5.3 `OptionsEditor.tsx` - JSON/Liste Editor für select-Typ
-- [ ] 5.4 `QuestionPreview.tsx` - Live-Vorschau
-- [ ] 5.5 Zod-Validation Schema
+- [x] 5.1 `QuestionForm.tsx` - Formular-Komponente
+- [x] 5.2 ImageUploader integriert in QuestionForm (react-dropzone)
+- [x] 5.3 OptionsEditor integriert in QuestionForm
+- [x] 5.4 QuestionPreview - nicht als separate Komponente (inline in Form)
+- [x] 5.5 Zod-Validation Schema
 
 ### Task 6: Admin UI - Categories Page (AC: 8)
-- [ ] 6.1 `src/app/admin/questions/categories/page.tsx`
-- [ ] 6.2 `CategoryTable.tsx` 
-- [ ] 6.3 `CategoryForm.tsx`
+- [x] 6.1 `src/app/admin/questions/categories/page.tsx`
+- [x] 6.2 `CategoryTable.tsx` 
+- [x] 6.3 CategoryForm integriert in CategoryTable
 
 ### Task 7: Frontend Integration (AC: alle)
-- [ ] 7.1 `src/lib/questions.ts` - Fragen aus DB laden
-- [ ] 7.2 `QuestionCard.tsx` anpassen - Dynamische Fragetypen
-- [ ] 7.3 `RatingButtons.tsx` anpassen - Boolean-Typ Support
-- [ ] 7.4 `AnalysisFlow.tsx` - Fragen aus DB statt Konstante
-- [ ] 7.5 Bild-Anzeige mit Fallback auf Emoji
+- [x] 7.1 `src/lib/questions.ts` - Fragen aus DB laden
+- [x] 7.2 `DynamicQuestionCard.tsx` - Dynamische Fragetypen (ersetzt QuestionCard)
+- [x] 7.3 `RatingButtons.tsx` anpassen - Boolean-Typ Support
+- [x] 7.4 `AnalysisFlow.tsx` - Fragen aus DB statt Konstante
+- [x] 7.5 Bild-Anzeige mit Fallback auf Emoji
 
 ### Task 8: AI Integration Update (AC: 5)
-- [ ] 8.1 `src/lib/claude/analyze.ts` - Gewichtung im Prompt
-- [ ] 8.2 Dynamische Kriterien-Liste statt CRITERIA Konstante
+- [x] 8.1 `src/lib/claude/analyze.ts` - Gewichtung im Prompt
+- [x] 8.2 Dynamische Kriterien-Liste statt CRITERIA Konstante
 
 ---
 
@@ -236,13 +236,16 @@ CREATE TABLE analysis_questions (
   category_id UUID REFERENCES question_categories(id) ON DELETE SET NULL,
   question_text TEXT NOT NULL,
   question_type TEXT NOT NULL CHECK (question_type IN ('boolean', 'rating', 'text', 'select')),
-  weight DECIMAL(3,2) NOT NULL DEFAULT 1.00,
+  weight NUMERIC(4,2) NOT NULL DEFAULT 1.00 CHECK (weight >= 0 AND weight <= 10), -- 0-10 Range
   sort_order INTEGER NOT NULL DEFAULT 0,
   image_path TEXT,                  -- Supabase Storage Pfad
   is_required BOOLEAN NOT NULL DEFAULT TRUE,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   select_options JSONB,             -- [{"value": "de", "label": "Deutschland"}]
   help_text TEXT,                   -- Für Info-Modal
+  allow_text_input BOOLEAN NOT NULL DEFAULT FALSE, -- Optional text input per question
+  text_input_label TEXT,            -- Custom label for text input
+  text_input_placeholder TEXT,      -- Placeholder for text input
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -425,12 +428,41 @@ Keine Probleme während der Implementierung.
 
 ---
 
+## Implementation Notes (Post-Development)
+
+### Abweichungen von der Spezifikation
+
+1. **Komponenten-Struktur**: ImageUploader, OptionsEditor und QuestionPreview wurden direkt in `QuestionForm.tsx` integriert statt als separate Komponenten. Dies reduziert Komplexität bei gleichbleibender Funktionalität.
+
+2. **Gewichtung Range**: 0-10 statt ursprünglich 0-5 (mehr Granularität für AI-Analyse).
+
+3. **CategoryForm**: Inline in CategoryTable integriert statt separate Komponente.
+
+4. **DynamicQuestionCard**: Ersetzt `QuestionCard.tsx` komplett mit Support für alle Fragetypen.
+
+### Zusätzliche Migrations
+
+- `021_question_images_bucket.sql` - Storage Bucket mit RLS
+- `022_analysis_settings.sql` - Globale Settings (deprecated)
+- `023_question_text_input.sql` - Optional Text Input per Question
+
+### Storage Bucket
+
+Der Bucket `question-images` wird automatisch via API erstellt wenn er nicht existiert (`upload/route.ts`).
+
+### Bekannte Limitierungen
+
+- Reorder API verwendet `Promise.all()` statt DB-Transaktion
+- Keine dedizierte Live-Vorschau Komponente (Form zeigt Fragetext direkt)
+
+---
+
 ## Dependencies
 
 - **Story 10.1 (Admin Auth)**: ✅ Done - Admin-Rolle existiert
-- **Supabase Storage**: Bucket muss erstellt werden
-- **@dnd-kit/core**: Muss installiert werden
-- **react-dropzone**: Muss installiert werden
+- **Supabase Storage**: ✅ Automatisch erstellt via API
+- **@dnd-kit/core**: ✅ Installiert
+- **react-dropzone**: ✅ Installiert
 
 ---
 

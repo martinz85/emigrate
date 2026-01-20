@@ -159,9 +159,6 @@ export async function PATCH(
     if (input.text_input_label !== undefined) updateData.text_input_label = input.text_input_label
     if (input.text_input_placeholder !== undefined) updateData.text_input_placeholder = input.text_input_placeholder
 
-    console.log('[API] PATCH question - input:', input)
-    console.log('[API] PATCH question - updateData:', updateData)
-
     const { data: question, error: updateError } = await supabase
       .from('analysis_questions')
       .update(updateData)
