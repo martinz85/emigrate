@@ -2,9 +2,11 @@
 story_id: "10.8"
 title: "E-Book Management (Admin)"
 epic: "Epic 10 - Admin Dashboard"
-status: in-progress
+status: done
 created: 2026-01-20
+completed: 2026-01-20
 created_by: Bob (SM)
+implemented_by: Amelia (Dev)
 priority: critical
 estimated_points: 8
 depends_on: ["10.1"]
