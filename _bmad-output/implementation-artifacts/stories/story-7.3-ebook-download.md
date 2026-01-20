@@ -45,9 +45,11 @@ damit ich es offline lesen kann.
 ### AC3: Sichere Download-URL
 **Given** ich klicke auf Herunterladen
 **When** der Download startet
-**Then** ist die URL zeitlich begrenzt (signed URL)
-**And** die URL ist nur für mich gültig
+**Then** wird der Download nur nach Auth-Check gestartet
+**And** die Datei ist nur für authentifizierte User zugänglich
 **And** die Datei wird als PDF heruntergeladen
+
+> **Implementierung:** Statt einer Signed URL (die geteilt werden könnte) wird die PDF direkt durch einen Server-Proxy gestreamt. Der Auth-Check erfolgt bei jedem Request, wodurch der Download strikt user-gebunden ist.
 
 ### AC4: PRO-User Zugang
 **Given** ich bin PRO-User

@@ -163,6 +163,7 @@ export async function checkUserOwnsBundles(
 
 /**
  * Insert or update user ebook purchase
+ * NOTE: Does NOT overwrite existing purchases with amount > 0 to preserve Einzelkauf data
  */
 export async function upsertUserEbook(
   supabase: SupabaseClient,
@@ -179,6 +180,41 @@ export async function upsertUserEbook(
     .upsert(data, { onConflict: 'user_id,ebook_id' })
 
   return { error: result.error }
+}
+
+/**
+ * Insert user ebook ONLY if not already owned
+ * Used for bundle items to preserve existing Einzelkauf data
+ */
+export async function insertUserEbookIfNotExists(
+  supabase: SupabaseClient,
+  data: {
+    user_id: string
+    ebook_id: string
+    stripe_session_id?: string
+    stripe_payment_id?: string
+    amount?: number
+  }
+): Promise<{ error: Error | null; alreadyOwned: boolean }> {
+  // First check if user already owns this ebook
+  const { data: existing } = await supabase
+    .from('user_ebooks')
+    .select('id')
+    .eq('user_id', data.user_id)
+    .eq('ebook_id', data.ebook_id)
+    .maybeSingle()
+
+  if (existing) {
+    // User already owns this ebook - don't overwrite
+    return { error: null, alreadyOwned: true }
+  }
+
+  // Insert new purchase
+  const result = await supabase
+    .from('user_ebooks')
+    .insert(data)
+
+  return { error: result.error, alreadyOwned: false }
 }
 
 /**

@@ -2,8 +2,11 @@
  * E-Book Download API
  * Story 7.3: E-Book Download
  * 
- * Generates a signed URL for downloading an e-book PDF.
- * Validates user has access (purchased, bundle, or PRO).
+ * Streams the e-book PDF directly to the user (auth-bound).
+ * The download is only accessible with valid authentication.
+ * 
+ * SECURITY: This proxy approach ensures the download link is user-bound,
+ * unlike signed URLs which can be shared with anyone.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -15,9 +18,6 @@ import {
   findBundlesContainingSlug,
   checkUserOwnsBundles,
 } from '@/lib/supabase/ebooks-queries'
-
-// Signed URL validity (1 hour)
-const SIGNED_URL_EXPIRY = 3600
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -68,26 +68,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Generate signed URL for download
-    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin.storage
+    // Download the file from Supabase Storage and stream it to the user
+    const { data: fileData, error: fileError } = await supabaseAdmin.storage
       .from('ebooks')
-      .createSignedUrl(ebook.pdf_path, SIGNED_URL_EXPIRY, {
-        download: `${ebook.slug}.pdf`,
-      })
+      .download(ebook.pdf_path)
 
-    if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error('Failed to create signed URL:', signedUrlError)
+    if (fileError || !fileData) {
+      console.error('Failed to download ebook file:', fileError)
       return NextResponse.json(
-        { error: 'Download konnte nicht generiert werden' },
+        { error: 'Download fehlgeschlagen' },
         { status: 500 }
       )
     }
 
-    // Return the signed URL
-    return NextResponse.json({
-      downloadUrl: signedUrlData.signedUrl,
-      filename: `${ebook.slug}.pdf`,
-      expiresIn: SIGNED_URL_EXPIRY,
+    // Get file size for Content-Length header
+    const fileBuffer = await fileData.arrayBuffer()
+
+    // Return the PDF as a downloadable response
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${ebook.slug}.pdf"`,
+        'Content-Length': String(fileBuffer.byteLength),
+        // Prevent caching of the file
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     })
 
   } catch (error) {

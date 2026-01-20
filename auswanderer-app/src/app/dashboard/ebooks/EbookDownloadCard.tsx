@@ -24,14 +24,31 @@ export function EbookDownloadCard({ ebook, isPro, purchasedAt }: EbookDownloadCa
 
     try {
       const response = await fetch(`/api/ebooks/${ebook.id}/download`)
-      const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Download fehlgeschlagen')
+        // Try to parse error message from JSON
+        try {
+          const data = await response.json()
+          throw new Error(data.error || 'Download fehlgeschlagen')
+        } catch {
+          throw new Error('Download fehlgeschlagen')
+        }
       }
 
-      // Open download URL in new tab
-      window.open(data.downloadUrl, '_blank')
+      // Response is the PDF file - convert to blob and download
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      
+      // Create temporary link and click it to trigger download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${ebook.slug}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error('Download error:', err)
       setError(err instanceof Error ? err.message : 'Download fehlgeschlagen')

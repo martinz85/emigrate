@@ -6,6 +6,7 @@ import {
   insertGuestPurchase, 
   getEbooksBySlugs, 
   upsertUserEbook,
+  insertUserEbookIfNotExists,
   getWebhookEvent,
   insertWebhookEvent,
   updateWebhookEvent,
@@ -396,18 +397,25 @@ async function handleEbookPurchase(session: Stripe.Checkout.Session) {
         amount: amountTotal || 0,
       })
 
-      // Insert individual ebooks from bundle
+      // Insert individual ebooks from bundle (don't overwrite existing Einzelkäufe)
+      let newEbooks = 0
+      let alreadyOwned = 0
       for (const ebook of ebooks) {
-        await upsertUserEbook(supabase, {
+        const { alreadyOwned: owned } = await insertUserEbookIfNotExists(supabase, {
           user_id: finalUserId,
           ebook_id: ebook.id,
           stripe_session_id: session.id,
           stripe_payment_id: session.payment_intent as string || undefined,
           amount: 0, // Individual items in bundle have 0 cost
         })
+        if (owned) {
+          alreadyOwned++
+        } else {
+          newEbooks++
+        }
       }
 
-      console.log(`✅ Bundle purchase recorded: ${ebooks.length + 1} ebooks for user ${finalUserId}`)
+      console.log(`✅ Bundle purchase recorded: ${newEbooks} new ebooks, ${alreadyOwned} already owned for user ${finalUserId}`)
     } else if (customerEmail) {
       // Guest bundle purchase - store for later claiming
       // Store the main bundle

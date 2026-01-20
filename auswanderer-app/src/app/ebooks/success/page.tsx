@@ -61,7 +61,15 @@ export default async function EbookSuccessPage({ searchParams }: PageProps) {
   try {
     session = await stripe.checkout.sessions.retrieve(sessionId)
     
+    // Validate payment status
     if (session.payment_status !== 'paid') {
+      console.warn('Session not paid:', sessionId)
+      redirect('/ebooks')
+    }
+
+    // SECURITY: Validate this is an ebook purchase, not another product type
+    if (session.metadata?.type !== 'ebook') {
+      console.warn('Session is not an ebook purchase:', sessionId, session.metadata?.type)
       redirect('/ebooks')
     }
 

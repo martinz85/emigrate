@@ -62,9 +62,10 @@ damit ich Zugang zum gewünschten Inhalt erhalte.
 ### AC4: Webhook-Verarbeitung
 **Given** eine E-Book Zahlung ist erfolgreich
 **When** Stripe den Webhook sendet
-**Then** wird der Kauf in `purchases` gespeichert
-**And** `product_type` ist 'ebook'
+**Then** wird der Kauf in `user_ebooks` gespeichert
 **And** das gekaufte E-Book wird dem User zugeordnet
+
+> **Hinweis (Implementierung):** Die ursprüngliche AC nannte `purchases` Tabelle, aber laut Dev Notes und tatsächlicher Implementierung ist `user_ebooks` die korrekte Tabelle für E-Book-Käufe. Die `purchases` Tabelle existiert nicht im System.
 
 ### AC5: Kaufbestätigung
 **Given** meine Zahlung war erfolgreich
