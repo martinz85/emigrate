@@ -159,3 +159,11 @@ development_status:
   epic-12: done
   12-1-price-campaign-management: done  # DB-synced price campaigns with strikethrough display ✅
 
+  # Epic 13: Infrastructure & Go-Live (DevOps)
+  epic-13: in-progress
+  13-1-vps-setup: done                    # HostUp VPS, PM2, Nginx ✅
+  13-2-vercel-preview: done               # Vercel Testumgebung ✅
+  13-3-dns-ssl: ready-for-dev             # DNS + SSL Zertifikat
+  13-4-stripe-live: ready-for-dev         # Stripe Live-Mode aktivieren
+  13-5-go-live: ready-for-dev             # Final Deployment + Launch
+
