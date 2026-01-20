@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/server'
 import { sendEmail, PurchaseConfirmationEmail, EbookPurchaseConfirmationEmail } from '@/lib/email'
+import { insertGuestPurchase, getEbooksBySlugs, upsertUserEbook } from '@/lib/supabase/ebooks-queries'
 
 // Initialize Stripe with secret key
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -359,22 +360,40 @@ async function handleEbookPurchase(session: Stripe.Checkout.Session) {
       }
 
       console.log(`✅ Bundle purchase recorded: ${ebooks.length + 1} ebooks for user ${finalUserId}`)
-    } else {
-      console.log(`⚠️ Guest bundle purchase - user needs to claim via email: ${maskedEmail}`)
-      // TODO: Store guest purchase for later claiming
+    } else if (customerEmail) {
+      // Guest bundle purchase - store for later claiming
+      // Store the main bundle
+      await insertGuestPurchase(supabase, {
+        email: customerEmail,
+        ebook_id: ebookId,
+        stripe_session_id: session.id,
+        stripe_payment_id: session.payment_intent as string || undefined,
+        amount: amountTotal || 0,
+      })
+
+      // Store individual ebooks from bundle
+      for (const ebook of ebooks) {
+        await insertGuestPurchase(supabase, {
+          email: customerEmail,
+          ebook_id: ebook.id,
+          stripe_session_id: session.id,
+          stripe_payment_id: session.payment_intent as string || undefined,
+          amount: 0,
+        })
+      }
+
+      console.log(`✅ Guest bundle purchase stored for ${maskedEmail} - will be claimed on signup`)
     }
   } else {
     // Single ebook purchase
     if (finalUserId) {
-      const { error: insertError } = await (supabase as any)
-        .from('user_ebooks')
-        .upsert({
-          user_id: finalUserId,
-          ebook_id: ebookId,
-          stripe_session_id: session.id,
-          stripe_payment_id: session.payment_intent as string,
-          amount: amountTotal,
-        }, { onConflict: 'user_id,ebook_id' })
+      const { error: insertError } = await upsertUserEbook(supabase, {
+        user_id: finalUserId,
+        ebook_id: ebookId,
+        stripe_session_id: session.id,
+        stripe_payment_id: session.payment_intent as string || undefined,
+        amount: amountTotal || 0,
+      })
 
       if (insertError) {
         console.error('Failed to insert ebook purchase:', insertError)
@@ -382,9 +401,17 @@ async function handleEbookPurchase(session: Stripe.Checkout.Session) {
       }
 
       console.log(`✅ E-Book purchase recorded: ${ebookSlug} for user ${finalUserId}`)
-    } else {
-      console.log(`⚠️ Guest ebook purchase - user needs to claim via email: ${maskedEmail}`)
-      // TODO: Store guest purchase for later claiming
+    } else if (customerEmail) {
+      // Guest ebook purchase - store for later claiming
+      await insertGuestPurchase(supabase, {
+        email: customerEmail,
+        ebook_id: ebookId,
+        stripe_session_id: session.id,
+        stripe_payment_id: session.payment_intent as string || undefined,
+        amount: amountTotal || 0,
+      })
+
+      console.log(`✅ Guest ebook purchase stored for ${maskedEmail} - will be claimed on signup`)
     }
   }
 

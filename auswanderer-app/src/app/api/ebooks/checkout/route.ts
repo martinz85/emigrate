@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { getEbookById, checkUserOwnsEbook, upsertUserEbook } from '@/lib/supabase/ebooks-queries'
 
 // Initialize Stripe
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -69,12 +70,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if user already owns this ebook
-      const { data: existingPurchase } = await (supabaseAdmin as any)
-        .from('user_ebooks')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('ebook_id', ebookId)
-        .maybeSingle()
+      const { data: existingPurchase } = await checkUserOwnsEbook(supabaseAdmin, user.id, ebookId)
 
       if (existingPurchase) {
         return NextResponse.json(
@@ -85,13 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch e-book from database
-    const { data: ebook, error: ebookError } = await (supabaseAdmin as any)
-      .from('ebooks')
-      .select('*')
-      .eq('id', ebookId)
-      .eq('is_active', true)
-      .is('deleted_at', null)
-      .single()
+    const { data: ebook, error: ebookError } = await getEbookById(supabaseAdmin, ebookId)
 
     if (ebookError || !ebook) {
       console.error('E-Book not found:', ebookError)
@@ -114,13 +104,11 @@ export async function POST(request: NextRequest) {
     if (ebook.price <= 0) {
       // Free e-book - grant access directly without checkout
       if (user) {
-        await (supabaseAdmin as any)
-          .from('user_ebooks')
-          .insert({
-            user_id: user.id,
-            ebook_id: ebook.id,
-            amount: 0,
-          })
+        await upsertUserEbook(supabaseAdmin, {
+          user_id: user.id,
+          ebook_id: ebook.id,
+          amount: 0,
+        })
         
         return NextResponse.json({
           success: true,
@@ -186,4 +174,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

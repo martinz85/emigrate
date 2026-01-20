@@ -8,6 +8,13 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import {
+  getEbookForDownload,
+  checkUserOwnsEbook,
+  getEbookSlug,
+  findBundlesContainingSlug,
+  checkUserOwnsBundles,
+} from '@/lib/supabase/ebooks-queries'
 
 // Signed URL validity (1 hour)
 const SIGNED_URL_EXPIRY = 3600
@@ -34,13 +41,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const supabaseAdmin = createAdminClient()
 
     // Fetch the ebook
-    const { data: ebook, error: ebookError } = await (supabaseAdmin as any)
-      .from('ebooks')
-      .select('id, slug, title, pdf_path, is_bundle, bundle_items')
-      .eq('id', ebookId)
-      .eq('is_active', true)
-      .is('deleted_at', null)
-      .single()
+    const { data: ebook, error: ebookError } = await getEbookForDownload(supabaseAdmin, ebookId)
 
     if (ebookError || !ebook) {
       return NextResponse.json(
@@ -122,43 +123,22 @@ async function checkEbookAccess(
   }
 
   // 2. Check direct purchase
-  const { data: directPurchase } = await (supabase as any)
-    .from('user_ebooks')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('ebook_id', ebookId)
-    .maybeSingle()
+  const { data: directPurchase } = await checkUserOwnsEbook(supabase, userId, ebookId)
 
   if (directPurchase) {
     return true
   }
 
   // 3. Check bundle purchases
-  // Get all bundles that contain this ebook
-  const { data: ebook } = await (supabase as any)
-    .from('ebooks')
-    .select('slug')
-    .eq('id', ebookId)
-    .single()
+  const { data: ebook } = await getEbookSlug(supabase, ebookId)
 
   if (ebook) {
     // Find bundles containing this ebook's slug
-    const { data: bundles } = await (supabase as any)
-      .from('ebooks')
-      .select('id')
-      .eq('is_bundle', true)
-      .contains('bundle_items', [ebook.slug])
+    const { data: bundles } = await findBundlesContainingSlug(supabase, ebook.slug)
 
     if (bundles && bundles.length > 0) {
-      // Check if user has purchased any of these bundles
-      const bundleIds = bundles.map((b: { id: string }) => b.id)
-      
-      const { data: bundlePurchase } = await (supabase as any)
-        .from('user_ebooks')
-        .select('id')
-        .eq('user_id', userId)
-        .in('ebook_id', bundleIds)
-        .maybeSingle()
+      const bundleIds = bundles.map(b => b.id)
+      const { data: bundlePurchase } = await checkUserOwnsBundles(supabase, userId, bundleIds)
 
       if (bundlePurchase) {
         return true
@@ -168,5 +148,3 @@ async function checkEbookAccess(
 
   return false
 }
-
-

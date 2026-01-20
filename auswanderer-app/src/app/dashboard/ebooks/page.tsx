@@ -11,18 +11,13 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { EbookDownloadCard } from './EbookDownloadCard'
 import type { Ebook as DbEbook } from '@/types/ebooks'
+import { getUserEbooks, getActiveEbooks } from '@/lib/supabase/ebooks-queries'
 
 export const metadata: Metadata = {
   title: 'Meine E-Books | Dashboard',
 }
 
 export const dynamic = 'force-dynamic'
-
-interface UserEbook {
-  ebook_id: string
-  purchased_at: string
-  amount: number
-}
 
 export default async function MyEbooksPage() {
   const supabase = await createClient()
@@ -45,59 +40,71 @@ export default async function MyEbooksPage() {
   const isPro = profile?.subscription_tier === 'pro'
 
   // Get user's purchased ebooks
-  const { data: userEbooks } = await (supabaseAdmin as any)
-    .from('user_ebooks')
-    .select('ebook_id, purchased_at, amount')
-    .eq('user_id', user.id)
-    .order('purchased_at', { ascending: false }) as { data: UserEbook[] | null }
-
-  const purchasedIds = userEbooks?.map(ue => ue.ebook_id) || []
+  const { data: userEbooks } = await getUserEbooks(supabaseAdmin, user.id)
 
   // Get all active ebooks
-  const { data: allEbooks } = await (supabaseAdmin as any)
-    .from('ebooks')
-    .select('*')
-    .eq('is_active', true)
-    .is('deleted_at', null)
-    .order('sort_order', { ascending: true }) as { data: DbEbook[] | null }
+  const { data: allEbooks } = await getActiveEbooks(supabaseAdmin)
 
-  // Filter to only ebooks user has access to
-  let accessibleEbooks: (DbEbook & { purchasedAt?: string })[] = []
+  // Build lookup maps for O(1) access
+  const ebookById = new Map<string, DbEbook>()
+  const ebookBySlug = new Map<string, DbEbook>()
+  for (const ebook of allEbooks || []) {
+    ebookById.set(ebook.id, ebook)
+    ebookBySlug.set(ebook.slug, ebook)
+  }
+
+  // Build purchase date map
+  const purchaseDateById = new Map<string, string>()
+  for (const ue of userEbooks || []) {
+    purchaseDateById.set(ue.ebook_id, ue.purchased_at)
+  }
+
+  // Collect accessible ebook IDs (use Set to avoid duplicates)
+  const accessibleIds = new Set<string>()
 
   if (isPro) {
-    // PRO users have access to all ebooks
-    accessibleEbooks = (allEbooks || []).map(ebook => ({
-      ...ebook,
-      purchasedAt: undefined, // PRO access, not purchased
-    }))
-  } else {
-    // Regular users: show purchased ebooks
-    for (const ue of userEbooks || []) {
-      const ebook = allEbooks?.find(e => e.id === ue.ebook_id)
-      if (ebook) {
-        accessibleEbooks.push({
-          ...ebook,
-          purchasedAt: ue.purchased_at,
-        })
+    // PRO users have access to all non-bundle ebooks
+    for (const ebook of allEbooks || []) {
+      if (!ebook.is_bundle) {
+        accessibleIds.add(ebook.id)
       }
+    }
+  } else {
+    // Regular users: collect from purchases + expand bundles
+    for (const ue of userEbooks || []) {
+      const ebook = ebookById.get(ue.ebook_id)
+      if (!ebook) continue
 
-      // If user bought a bundle, add all included ebooks
-      if (ebook?.is_bundle && ebook.bundle_items) {
+      if (ebook.is_bundle && ebook.bundle_items) {
+        // Expand bundle: add all included ebooks
         for (const slug of ebook.bundle_items) {
-          const bundledEbook = allEbooks?.find(e => e.slug === slug)
-          if (bundledEbook && !accessibleEbooks.find(e => e.id === bundledEbook.id)) {
-            accessibleEbooks.push({
-              ...bundledEbook,
-              purchasedAt: ue.purchased_at,
-            })
+          const bundledEbook = ebookBySlug.get(slug)
+          if (bundledEbook) {
+            accessibleIds.add(bundledEbook.id)
+            // Inherit purchase date from bundle
+            if (!purchaseDateById.has(bundledEbook.id)) {
+              purchaseDateById.set(bundledEbook.id, ue.purchased_at)
+            }
           }
         }
+      } else {
+        // Single ebook purchase
+        accessibleIds.add(ebook.id)
       }
     }
   }
 
-  // Remove bundles from display (only show individual ebooks)
-  accessibleEbooks = accessibleEbooks.filter(e => !e.is_bundle)
+  // Build final list (exclude bundles from display)
+  const accessibleEbooks = Array.from(accessibleIds)
+    .map(id => {
+      const ebook = ebookById.get(id)!
+      return {
+        ...ebook,
+        purchasedAt: isPro ? undefined : purchaseDateById.get(id),
+      }
+    })
+    .filter(e => !e.is_bundle)
+    .sort((a, b) => a.sort_order - b.sort_order)
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -177,4 +184,3 @@ export default async function MyEbooksPage() {
     </div>
   )
 }
-
