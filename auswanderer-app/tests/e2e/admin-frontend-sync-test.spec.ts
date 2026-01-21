@@ -121,7 +121,7 @@ test.describe('Admin to Frontend Sync Test', () => {
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
     
-    const restoreInput = page.locator('input, textarea').filter({ hasValue: uniqueTestValue }).first();
+    const restoreInput = page.locator(`input[value="${uniqueTestValue}"], textarea:has-text("${uniqueTestValue}")`).first();
     await restoreInput.fill(originalHeadline);
     await page.locator('button:has-text("Speichern")').click();
     await page.waitForTimeout(2000);

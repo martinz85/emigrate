@@ -73,7 +73,7 @@ export const siteMediaSchema = z.object({
   file_size: z.number().int().positive(),
   usage_section: z.enum(['hero', 'loading_screen']).nullable(),
   is_active: z.boolean(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
   uploaded_at: z.string(),
   uploaded_by: z.string().optional(),
 })

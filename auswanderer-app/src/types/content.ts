@@ -113,7 +113,7 @@ export const siteContentSchema = z.object({
   content: z.string().min(1, 'Content darf nicht leer sein').max(500, 'Maximal 500 Zeichen'),
   label: z.string().optional(),
   description: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
   created_at: z.string(),
   updated_at: z.string(),
   created_by: z.string().optional(),
