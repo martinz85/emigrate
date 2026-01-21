@@ -26,7 +26,8 @@ export async function GET(
     // ============================================
     // 1. Fetch and validate token
     // ============================================
-    const { data: tokenData, error: tokenError } = await supabase
+    // Note: purchase_access_tokens table may not be in generated types yet
+    const { data: tokenData, error: tokenError } = await (supabase as any)
       .from('purchase_access_tokens')
       .select('*')
       .eq('token', token)
@@ -53,7 +54,7 @@ export async function GET(
     // 2. Update token usage stats
     // ============================================
     const now = new Date().toISOString()
-    await supabase
+    await (supabase as any)
       .from('purchase_access_tokens')
       .update({
         used_at: tokenData.used_at || now, // Only set on first use
@@ -87,7 +88,8 @@ export async function GET(
     const ebooks = []
 
     if (ebookIds.length > 0) {
-      const { data: guestPurchases, error: ebooksError } = await supabase
+      // Note: guest_purchases table may not be in generated types yet
+      const { data: guestPurchases, error: ebooksError } = await (supabase as any)
         .from('guest_purchases')
         .select(`
           id,

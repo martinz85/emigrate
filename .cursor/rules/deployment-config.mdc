@@ -1,0 +1,57 @@
+---
+description: "Deployment Configuration - Vercel & Environment"
+globs: []
+alwaysApply: false
+---
+
+# Deployment Configuration
+
+## Vercel
+
+| Key | Value |
+|-----|-------|
+| **Token** | *Lokal speichern - nicht in Git committen* |
+| **Project** | `auswanderer-app` |
+| **Team** | `emigrates-projects` |
+| **Production URL** | `https://auswanderer-app.vercel.app` |
+
+## Deploy Commands
+
+```bash
+# Production Deploy
+cd auswanderer-app
+npx vercel --prod --token $VERCEL_TOKEN
+
+# Preview Deploy
+npx vercel --token $VERCEL_TOKEN
+```
+
+**Token lokal setzen:**
+```bash
+export VERCEL_TOKEN="dein-token-hier"
+```
+
+## Supabase (Referenz)
+
+Vollständige Supabase-Konfiguration: `.cursor/rules/supabase-config.mdc`
+
+| Umgebung | Project Ref |
+|----------|-------------|
+| DEV | `hkktofxvgrxfkaixcowm` |
+| PROD | `kfcofscgtvootvsnneux` |
+
+## Environment Variables (Production)
+
+Diese müssen in Vercel gesetzt sein:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRO_MONTHLY_PRICE_ID` ⚠️ Neu für Epic 8
+- `STRIPE_PRO_YEARLY_PRICE_ID` ⚠️ Neu für Epic 8
+- `RESEND_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `AUDIT_SALT`
+- `AI_KEY_ENCRYPTION_SECRET`
+- `CRON_SECRET`

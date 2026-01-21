@@ -142,5 +142,34 @@ export const styles = {
     fontSize: '24px',
     fontWeight: '700',
   },
+  
+  // Info box (security/notes)
+  infoBox: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: '6px',
+    padding: '16px',
+    margin: '24px 0',
+  },
+  
+  infoText: {
+    color: '#475569',
+    fontSize: '14px',
+    lineHeight: '1.6',
+    margin: '0',
+  },
+  
+  // Small text
+  textSmall: {
+    color: '#64748b',
+    fontSize: '14px',
+    lineHeight: '1.5',
+    margin: '0 0 12px',
+  },
+  
+  // Horizontal rule
+  hr: {
+    borderTop: '1px solid #e2e8f0',
+    margin: '24px 0',
+  },
 }
 

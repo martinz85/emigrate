@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
     // ============================================
     // 1. Search for Guest E-Book Purchases
     // ============================================
-    const { data: guestEbooks, error: ebooksError } = await supabase
+    // Note: guest_purchases table may not be in generated types yet
+    const { data: guestEbooks, error: ebooksError } = await (supabase as any)
       .from('guest_purchases')
       .select(`
         id,
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
     if (stripe && paidAnalyses) {
       for (const analysis of paidAnalyses) {
         // Only check recent analyses (last 90 days)
+        if (!analysis.created_at) continue
         const createdAt = new Date(analysis.created_at)
         const ninetyDaysAgo = new Date()
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
@@ -149,14 +151,15 @@ export async function POST(request: NextRequest) {
     expiresAt.setHours(expiresAt.getHours() + 24) // Valid for 24 hours
 
     // Store token in database
-    const { error: tokenError } = await supabase
+    // Note: purchase_access_tokens table may not be in generated types yet
+    const { error: tokenError } = await (supabase as any)
       .from('purchase_access_tokens')
       .insert({
         token,
         email: emailLower,
         expires_at: expiresAt.toISOString(),
         analysis_ids: matchingAnalyses.map(a => a.id),
-        ebook_ids: guestEbooks?.map(e => e.ebook_id) || [],
+        ebook_ids: guestEbooks?.map((e: { ebook_id: string }) => e.ebook_id) || [],
       })
 
     if (tokenError) {
