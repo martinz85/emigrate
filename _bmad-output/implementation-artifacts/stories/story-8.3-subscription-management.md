@@ -2,12 +2,14 @@
 story_id: "8.3"
 title: "Subscription Management"
 epic: "Epic 8 - PRO Subscription"
-status: ready-for-dev
+status: done
 created: 2026-01-19
 created_by: Bob (SM)
 priority: medium
 estimated_points: 8
 depends_on: ["8.2"]
+completed: 2026-01-21
+completed_by: Amelia (Dev)
 ---
 
 # Story 8.3: Subscription Management

@@ -42,6 +42,7 @@ export interface AnalysisQuestion {
   image_path: string | null
   is_required: boolean
   is_active: boolean
+  is_pro_only: boolean  // Story 8.4: PRO-Only Fragen
   // Optional text input field per question
   allow_text_input: boolean
   text_input_label: string | null
@@ -74,6 +75,7 @@ export interface CreateQuestionInput {
   image_path?: string | null
   is_required?: boolean
   is_active?: boolean
+  is_pro_only?: boolean  // Story 8.4: PRO-Only Fragen
   // Optional text input field per question
   allow_text_input?: boolean
   text_input_label?: string | null

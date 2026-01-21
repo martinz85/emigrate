@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { BillingToggle, BillingPeriod } from './BillingToggle'
 import { FeatureList } from './FeatureList'
 import { Plan, formatPlanPrice, getYearlySavings } from '@/lib/plans'
+import { createClient } from '@/lib/supabase/client'
 
 interface PlanComparisonProps {
   plans: Plan[]
@@ -15,9 +17,55 @@ interface PlanComparisonProps {
 
 export function PlanComparison({ plans, isPro = false, onSelectPlan }: PlanComparisonProps) {
   const [billing, setBilling] = useState<BillingPeriod>('monthly')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   const freePlan = plans.find(p => p.slug === 'free')
   const proPlan = plans.find(p => p.slug === 'pro')
+
+  // Story 8.2: Handle subscription checkout
+  const handleSubscriptionCheckout = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Check if user is logged in
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        // Redirect to login with return URL
+        const returnTo = encodeURIComponent(`/pricing?checkout=pro&billing=${billing}`)
+        router.push(`/login?return_to=${returnTo}`)
+        return
+      }
+
+      // Call checkout API
+      const response = await fetch('/api/subscription/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ billing }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Checkout konnte nicht gestartet werden')
+      }
+
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error('Keine Checkout-URL erhalten')
+      }
+    } catch (err) {
+      console.error('Checkout error:', err)
+      setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten')
+      setIsLoading(false)
+    }
+  }
 
   if (!freePlan || !proPlan) {
     return null
@@ -122,12 +170,26 @@ export function PlanComparison({ plans, isPro = false, onSelectPlan }: PlanCompa
                 PRO werden ⭐
               </button>
             ) : (
-              <Link
-                href={`/checkout?product=pro&billing=${billing}`}
-                className="block text-center py-3 rounded-lg font-semibold bg-primary-500 text-white hover:bg-primary-600 transition-all min-h-[48px]"
+              <button
+                onClick={handleSubscriptionCheckout}
+                disabled={isLoading}
+                className="w-full py-3 rounded-lg font-semibold bg-primary-500 text-white hover:bg-primary-600 transition-all min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                PRO werden ⭐
-              </Link>
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Wird geladen...</span>
+                  </>
+                ) : (
+                  <span>PRO werden ⭐</span>
+                )}
+              </button>
+            )}
+            {error && (
+              <p className="mt-2 text-sm text-red-600 text-center">{error}</p>
             )}
           </div>
         </div>

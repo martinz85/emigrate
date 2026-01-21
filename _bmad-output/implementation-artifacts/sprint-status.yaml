@@ -1,6 +1,6 @@
 # Sprint Status - Auswanderer-Plattform
 # generated: 2026-01-18
-# updated: 2026-01-20 (Amelia Dev - Story 7.3 E-Book Download Complete)
+# updated: 2026-01-21 (Amelia Dev - Epic 8 PRO Subscription COMPLETE)
 # project: Auswanderer-Plattform
 # project_key: emigrate
 # tracking_system: file-system
@@ -145,10 +145,13 @@ development_status:
   7-3-ebook-download: done                   # ✅ Download API, Dashboard, E-Mail
 
   # Epic 8: PRO Subscription (Post-MVP)
-  epic-8: in-progress
+  epic-8: done                             # ✅ PRO Subscription COMPLETE
   8-1-subscription-plans: done             # ✅ Code Review completed, fixes applied
-  8-2-subscription-checkout: in-progress   # ✅ Story created by Bob (SM), handed over to Amelia
-  8-3-subscription-management: ready-for-dev # ✅ Story created by Bob (SM)
+  8-2-subscription-checkout: done          # ✅ Stripe Checkout, Webhook, Pricing Page
+  8-3-subscription-management: done        # ✅ Cancel, Resume, Stripe Portal, Dashboard
+  8-4-pro-only-questions: done             # ✅ PRO-Only Toggle im Admin, API-Filter
+  8-5-analysis-limit: done                 # ✅ Tägliches Analyse-Limit für PRO
+  8-6-roadmap-checkpoints: done            # ✅ Fahrplan mit Checkpoints (PRO Dashboard)
 
   # Epic 11: Technical Improvements (Post-MVP, from Code Reviews)
   epic-11: done

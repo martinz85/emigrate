@@ -133,6 +133,43 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      // ============================================
+      // SUBSCRIPTION EVENTS - Story 8.2
+      // ============================================
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription
+        try {
+          await handleSubscriptionUpdate(subscription)
+        } catch (subError) {
+          processingError = subError instanceof Error ? subError : new Error(String(subError))
+          console.error('Error processing subscription update:', subError)
+        }
+        break
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription
+        try {
+          await handleSubscriptionCanceled(subscription)
+        } catch (subError) {
+          processingError = subError instanceof Error ? subError : new Error(String(subError))
+          console.error('Error processing subscription cancellation:', subError)
+        }
+        break
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice
+        try {
+          await handleInvoicePaymentFailed(invoice)
+        } catch (subError) {
+          processingError = subError instanceof Error ? subError : new Error(String(subError))
+          console.error('Error processing failed invoice:', subError)
+        }
+        break
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`)
     }
@@ -562,4 +599,184 @@ function validatePaymentAmount(
     }
     console.log(`Discount applied: ${discountApplied / 100}€ (original: ${expectedPrice / 100}€)`)
   }
+}
+
+// ============================================
+// SUBSCRIPTION HANDLERS - Story 8.2
+// ============================================
+
+/**
+ * Handle subscription created or updated
+ * Updates user profile with subscription details
+ */
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  const supabase = createAdminClient()
+  
+  const customerId = subscription.customer as string
+  const subscriptionId = subscription.id
+  const status = subscription.status
+  const periodEnd = new Date(subscription.current_period_end * 1000).toISOString()
+  
+  // Get billing from metadata or infer from interval
+  const billing = subscription.metadata?.billing || 
+    (subscription.items.data[0]?.price?.recurring?.interval === 'year' ? 'yearly' : 'monthly')
+
+  console.log('=== Subscription Update ===')
+  console.log(`Subscription ID: ${subscriptionId}`)
+  console.log(`Customer ID: ${customerId}`)
+  console.log(`Status: ${status}`)
+  console.log(`Billing: ${billing}`)
+  console.log(`Period End: ${periodEnd}`)
+  console.log('===========================')
+
+  // Find user by Stripe customer ID
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle()
+
+  if (profileError || !profile) {
+    // Try to find by user_id in subscription metadata
+    const userId = subscription.metadata?.user_id
+    if (userId) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          stripe_subscription_id: subscriptionId,
+          subscription_status: status,
+          subscription_tier: status === 'active' || status === 'trialing' ? 'pro' : 'free',
+          subscription_period_end: periodEnd,
+        })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.error('Failed to update subscription by user_id:', updateError)
+        throw updateError
+      }
+      console.log(`✅ Subscription updated for user ${userId} via metadata`)
+      return
+    }
+
+    console.error('No profile found for customer:', customerId)
+    throw new Error(`No profile found for customer: ${customerId}`)
+  }
+
+  // Update profile with subscription details
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      stripe_subscription_id: subscriptionId,
+      subscription_status: status,
+      subscription_tier: status === 'active' || status === 'trialing' ? 'pro' : 'free',
+      subscription_period_end: periodEnd,
+    })
+    .eq('id', profile.id)
+
+  if (updateError) {
+    console.error('Failed to update subscription:', updateError)
+    throw updateError
+  }
+
+  console.log(`✅ Subscription ${status} for user ${profile.id} (${maskEmail(profile.email)})`)
+}
+
+/**
+ * Handle subscription canceled/deleted
+ * Downgrades user to free tier
+ */
+async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
+  const supabase = createAdminClient()
+  
+  const customerId = subscription.customer as string
+  const subscriptionId = subscription.id
+
+  console.log('=== Subscription Canceled ===')
+  console.log(`Subscription ID: ${subscriptionId}`)
+  console.log(`Customer ID: ${customerId}`)
+  console.log('=============================')
+
+  // Find user by subscription ID or customer ID
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .or(`stripe_subscription_id.eq.${subscriptionId},stripe_customer_id.eq.${customerId}`)
+    .maybeSingle()
+
+  if (profileError || !profile) {
+    console.error('No profile found for canceled subscription:', subscriptionId)
+    // Don't throw - subscription might have been from a different system
+    return
+  }
+
+  // Downgrade to free
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      subscription_status: 'canceled',
+      subscription_tier: 'free',
+      // Keep subscription_id and period_end for reference
+    })
+    .eq('id', profile.id)
+
+  if (updateError) {
+    console.error('Failed to downgrade subscription:', updateError)
+    throw updateError
+  }
+
+  console.log(`✅ Subscription canceled - user ${profile.id} downgraded to free`)
+
+  // TODO: Send cancellation email (optional)
+}
+
+/**
+ * Handle failed invoice payment
+ * Marks subscription as past_due
+ */
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const supabase = createAdminClient()
+  
+  const customerId = invoice.customer as string
+  const subscriptionId = invoice.subscription as string | null
+
+  console.log('=== Invoice Payment Failed ===')
+  console.log(`Invoice ID: ${invoice.id}`)
+  console.log(`Customer ID: ${customerId}`)
+  console.log(`Subscription ID: ${subscriptionId}`)
+  console.log('==============================')
+
+  if (!subscriptionId) {
+    // Not a subscription invoice - might be a one-time payment
+    console.log('Invoice is not for a subscription, skipping')
+    return
+  }
+
+  // Find user
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, email')
+    .or(`stripe_subscription_id.eq.${subscriptionId},stripe_customer_id.eq.${customerId}`)
+    .maybeSingle()
+
+  if (profileError || !profile) {
+    console.error('No profile found for failed invoice:', invoice.id)
+    return
+  }
+
+  // Mark as past_due (user keeps PRO access until Stripe cancels)
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({
+      subscription_status: 'past_due',
+    })
+    .eq('id', profile.id)
+
+  if (updateError) {
+    console.error('Failed to update subscription status:', updateError)
+    throw updateError
+  }
+
+  console.log(`⚠️ Payment failed - subscription marked as past_due for user ${profile.id}`)
+
+  // TODO: Send payment failed email
 }

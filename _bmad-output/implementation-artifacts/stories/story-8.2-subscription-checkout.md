@@ -2,12 +2,14 @@
 story_id: "8.2"
 title: "Subscription Checkout"
 epic: "Epic 8 - PRO Subscription"
-status: in-progress
+status: done
 created: 2026-01-19
 created_by: Bob (SM)
 priority: high
 estimated_points: 8
 depends_on: ["8.1"]
+completed: 2026-01-21
+completed_by: Amelia (Dev)
 ---
 
 # Story 8.2: Subscription Checkout

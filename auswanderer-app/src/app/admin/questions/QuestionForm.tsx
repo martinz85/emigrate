@@ -44,6 +44,7 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
     weight: question?.weight ?? 1.00,
     is_required: question?.is_required ?? true,
     is_active: question?.is_active ?? true,
+    is_pro_only: question?.is_pro_only ?? false,
     select_options: question?.select_options || [] as SelectOption[],
     // Optional text input per question
     allow_text_input: question?.allow_text_input ?? false,
@@ -175,6 +176,8 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
         allow_text_input: formData.allow_text_input,
         text_input_label: formData.allow_text_input ? formData.text_input_label : null,
         text_input_placeholder: formData.allow_text_input ? formData.text_input_placeholder : null,
+        // PRO-Only - Story 8.4
+        is_pro_only: formData.is_pro_only,
       }
 
       const url = isEditing 
@@ -439,7 +442,7 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
         </div>
 
         {/* Toggles */}
-        <div className="p-6 flex gap-8">
+        <div className="p-6 flex flex-wrap gap-8">
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -458,6 +461,22 @@ export function QuestionForm({ question, categories }: QuestionFormProps) {
               className="w-5 h-5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
             />
             <span className="text-sm text-slate-700">Aktiv (im Frontend sichtbar)</span>
+          </label>
+
+          {/* PRO-Only Toggle - Story 8.4 */}
+          <label className="flex items-center gap-3 cursor-pointer" data-testid="admin-question-pro-only-toggle">
+            <input
+              type="checkbox"
+              checked={formData.is_pro_only}
+              onChange={(e) => setFormData(prev => ({ ...prev, is_pro_only: e.target.checked }))}
+              className="w-5 h-5 rounded border-slate-300 text-purple-500 focus:ring-purple-500"
+            />
+            <span className="flex items-center gap-2 text-sm text-slate-700">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                👑 PRO
+              </span>
+              Nur für PRO-User
+            </span>
           </label>
         </div>
 

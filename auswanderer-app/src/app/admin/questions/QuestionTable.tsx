@@ -126,9 +126,17 @@ function SortableRow({ question, onToggleActive, onDelete, isUpdating }: Sortabl
 
       {/* Type */}
       <td className="px-4 py-3">
-        <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${typeInfo.color}`}>
-          {typeInfo.label}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${typeInfo.color}`}>
+            {typeInfo.label}
+          </span>
+          {/* PRO Badge - Story 8.4 */}
+          {question.is_pro_only && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700">
+              👑 PRO
+            </span>
+          )}
+        </div>
       </td>
 
       {/* Weight */}
@@ -242,6 +250,7 @@ export function QuestionTable({ questions: initialQuestions, categories }: Quest
     if (filter === 'all') return true
     if (filter === 'active') return q.is_active
     if (filter === 'inactive') return !q.is_active
+    if (filter === 'pro_only') return q.is_pro_only
     return q.category_id === filter
   })
 
@@ -362,6 +371,7 @@ export function QuestionTable({ questions: initialQuestions, categories }: Quest
             <option value="all">Alle Fragen</option>
             <option value="active">Nur aktive</option>
             <option value="inactive">Nur inaktive</option>
+            <option value="pro_only">Nur PRO-Only 👑</option>
             <optgroup label="Nach Kategorie">
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>

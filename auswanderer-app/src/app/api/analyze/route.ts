@@ -15,6 +15,7 @@ import {
   type UsageStats,
 } from '@/lib/rate-limit'
 import { sendEmail } from '@/lib/email'
+import { checkAnalysisLimit, incrementAnalysisCount, formatTimeUntilReset } from '@/lib/analysis-limit'
 
 // Cookie name for anonymous session tracking
 const SESSION_COOKIE_NAME = 'session_id'
@@ -65,6 +66,33 @@ export async function POST(request: NextRequest) {
           },
         }
       )
+    }
+
+    // ============================================
+    // Story 8.5: PRO Daily Limit Check
+    // ============================================
+    const supabaseForLimit = await createClient()
+    const { data: { user: currentUser } } = await supabaseForLimit.auth.getUser()
+    
+    if (currentUser) {
+      const supabaseAdminForLimit = createAdminClient()
+      const limitResult = await checkAnalysisLimit(supabaseAdminForLimit, currentUser.id)
+      
+      if (limitResult.isPro && !limitResult.allowed) {
+        const timeUntilReset = formatTimeUntilReset(limitResult.resetAt)
+        return NextResponse.json(
+          {
+            error: `Dein tägliches Analyse-Limit ist erreicht (${limitResult.limit} pro Tag). Nächste Analyse möglich in: ${timeUntilReset}`,
+            proLimit: {
+              limit: limitResult.limit,
+              remaining: limitResult.remaining,
+              usedToday: limitResult.usedToday,
+              resetAt: limitResult.resetAt,
+            },
+          },
+          { status: 429 }
+        )
+      }
     }
 
     const body = await request.json()
@@ -169,6 +197,12 @@ export async function POST(request: NextRequest) {
 
     // Increment rate limits and record usage AFTER successful analysis
     await incrementRateLimits(ipHash, newSessionId, usage)
+
+    // Story 8.5: Increment PRO user's daily analysis count
+    if (user) {
+      const supabaseAdminForCount = createAdminClient()
+      await incrementAnalysisCount(supabaseAdminForCount, user.id)
+    }
 
     // Record detailed usage stats
     await recordUsageStats({

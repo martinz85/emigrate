@@ -26,6 +26,15 @@ interface SettingConfig {
 }
 
 const SETTINGS_CONFIG: SettingConfig[] = [
+  // Story 8.5: PRO Daily Analysis Limit
+  {
+    key: 'pro_daily_analysis_limit',
+    label: '👑 PRO Analyse-Limit (täglich)',
+    description: 'Maximale Analysen pro Tag für PRO-User (0 = unbegrenzt)',
+    fields: [
+      { name: 'value', label: 'Limit', type: 'number', min: 0, max: 100, suffix: 'Analysen/Tag' },
+    ],
+  },
   {
     key: 'rate_limit_ip_daily',
     label: 'IP Rate Limit (täglich)',
