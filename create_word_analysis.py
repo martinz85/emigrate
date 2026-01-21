@@ -591,3 +591,7 @@ print(r"Gespeichert unter: C:\Project A\Auswanderungsanalyse_2025_Erweitert_Komp
 
 
 
+
+
+
+

@@ -172,3 +172,12 @@ development_status:
   13-4-stripe-live: ready-for-dev         # Stripe Live-Mode aktivieren
   13-5-go-live: ready-for-dev             # Final Deployment + Launch
 
+  # Epic 14: Content Management System (CMS)
+  epic-14: in-progress
+  14-1-content-text-editor: done          # ✅ Code Review PASSED (2026-01-21)
+  14-2-media-manager: done                # ✅ Code Review PASSED (2026-01-21)
+  14-3-legal-pages-editor: ready-for-dev  # Legal Pages Editor
+  14-4-frontend-integration: ready-for-dev # Frontend CMS Integration
+  14-5-favicon-management: ready-for-dev  # Favicon Upload & Management
+  14-6-cookie-banner-management: ready-for-dev # Cookie Banner & Consent
+

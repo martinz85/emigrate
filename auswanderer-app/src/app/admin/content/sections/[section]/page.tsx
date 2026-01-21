@@ -76,7 +76,7 @@ export default function ContentSectionEditPage() {
         contentSchema.parse({ content: item.content })
       } catch (error) {
         if (error instanceof z.ZodError) {
-          newErrors[item.key] = error.errors[0].message
+          newErrors[item.key] = error.issues[0].message
         }
       }
     })
