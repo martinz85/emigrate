@@ -1,6 +1,42 @@
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
 
-export function HeroSection() {
+// Fallback content if database is unavailable
+const FALLBACK_CONTENT = {
+  headline_part1: 'Finde dein perfektes',
+  headline_part2: 'Auswanderungsland',
+  subheadline: 'Unser AI analysiert, was DIR wichtig ist - und findet das Land, das perfekt zu dir passt. In nur 5-10 Minuten.',
+  cta_primary: 'Kostenlos starten',
+  cta_secondary: "So funktioniert's",
+  trust_badge_1: 'Auf dich zugeschnitten',
+  trust_badge_2: 'AI-gestützte Analyse',
+  trust_badge_3: 'Sofortige Vorschau',
+  trust_badge_4: 'DSGVO-konform'
+}
+
+export async function HeroSection() {
+  // Fetch content from database
+  let content = FALLBACK_CONTENT
+  
+  try {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('site_content')
+      .select('key, content')
+      .eq('section', 'hero')
+    
+    if (!error && data) {
+      const contentMap: Record<string, string> = {}
+      data.forEach(item => {
+        contentMap[item.key] = item.content
+      })
+      content = { ...FALLBACK_CONTENT, ...contentMap }
+    }
+  } catch (error) {
+    console.error('Error loading hero content:', error)
+    // Use fallback content
+  }
+
   return (
     <section className="pt-24 pb-16 md:pt-32 md:pb-24 relative overflow-hidden">
       {/* Background decoration */}
@@ -11,60 +47,72 @@ export function HeroSection() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-4xl mx-auto">
-          {/* Headline */}
-          <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold text-slate-900 mb-6 leading-tight">
-            Finde dein perfektes{' '}
-            <span className="gradient-text">Auswanderungsland</span>
-          </h1>
+          {/* Headline with inline image */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-6">
+            <h1 className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold text-slate-900 leading-tight">
+              {content.headline_part1}{' '}
+              <span className="gradient-text">{content.headline_part2}</span>
+            </h1>
+            
+            {/* Goodbye Image - inline next to headline, hidden on mobile for better UX */}
+            <div className="flex-shrink-0 hidden md:block">
+              <img 
+                src="/Images/Goodbye.jpg" 
+                alt="Auswandern aus Deutschland - Ortsschild zeigt Abschied von Deutschland und neuen Weg zum Auswandern"
+                className="w-56 lg:w-64 h-auto rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300"
+                loading="eager"
+              />
+            </div>
+          </div>
 
           {/* Subheadline */}
           <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-            Unser AI analysiert, was <strong>DIR</strong> wichtig ist - 
-            und findet das Land, das perfekt zu dir passt. In nur 5-10 Minuten.
+            {content.subheadline}
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
             <Link href="/analyse" className="btn-cta flex items-center justify-center gap-2">
               <span>🚀</span>
-              Kostenlos starten
+              {content.cta_primary}
             </Link>
             <Link href="/#so-funktionierts" className="btn-secondary flex items-center justify-center gap-2">
-              So funktioniert&apos;s
+              {content.cta_secondary}
               <span>→</span>
             </Link>
           </div>
 
-          {/* Social proof (professional, non-gimmicky) */}
           {/* Trust badges */}
           <div className="flex flex-wrap justify-center gap-6 text-sm text-slate-500">
             <div className="flex items-center gap-2">
               <span className="text-green-500">✓</span>
-              Auf dich zugeschnitten
+              {content.trust_badge_1}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-green-500">✓</span>
-              AI-gestützte Analyse
+              {content.trust_badge_2}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-green-500">✓</span>
-              Sofortige Vorschau
+              {content.trust_badge_3}
             </div>
             <div className="flex items-center gap-2">
               <span className="text-green-500">✓</span>
-              DSGVO-konform
+              {content.trust_badge_4}
             </div>
           </div>
         </div>
 
-        {/* Preview Image */}
+        {/* Preview Image - GIF Animation */}
         <div className="mt-16 relative">
           <div className="card-hover max-w-4xl mx-auto p-2 bg-gradient-to-b from-white to-slate-50">
-            <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl flex items-center justify-center">
-              <div className="text-center">
-                <span className="text-6xl mb-4 block">📊</span>
-                <p className="text-slate-400">Interaktive Demo des AI-Assistenten</p>
-              </div>
+            <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl overflow-hidden">
+              <img 
+                src="/Images/download-ezgif.com-optimize.gif" 
+                alt="Interaktive Demo des AI-Assistenten"
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
             </div>
           </div>
           
@@ -76,6 +124,7 @@ export function HeroSection() {
             </div>
           </div>
         </div>
+
 
         {/* Testimonials Section */}
         <div className="mt-20 max-w-5xl mx-auto">

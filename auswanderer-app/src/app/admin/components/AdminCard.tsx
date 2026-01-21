@@ -1,8 +1,9 @@
 import { cn } from '@/lib/utils'
+import { ReactNode } from 'react'
 
 interface AdminCardProps {
-  title: string
-  value: string | number
+  title?: string
+  value?: string | number
   subtitle?: string
   icon?: string
   trend?: 'up' | 'down' | 'warning' | 'neutral' | {
@@ -10,6 +11,7 @@ interface AdminCardProps {
     label: string
   }
   className?: string
+  children?: ReactNode
 }
 
 export function AdminCard({ 
@@ -18,8 +20,22 @@ export function AdminCard({
   subtitle, 
   icon, 
   trend, 
-  className 
+  className,
+  children
 }: AdminCardProps) {
+  // If children are provided, render them directly
+  if (children) {
+    return (
+      <div className={cn(
+        'bg-white rounded-xl border border-slate-200 p-6',
+        className
+      )}>
+        {children}
+      </div>
+    )
+  }
+
+  // Otherwise, render the default card layout
   return (
     <div className={cn(
       'bg-white rounded-xl border border-slate-200 p-6',

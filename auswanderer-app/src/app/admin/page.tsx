@@ -78,6 +78,16 @@ export default async function AdminDashboard() {
           <QuickLink href="/admin/prices" icon="💰" label="Preise anpassen" />
         </div>
       </div>
+
+      <div className="mt-6 p-6 bg-white rounded-xl border border-slate-200">
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">Content Management</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <QuickLink href="/admin/content/sections" icon="📝" label="Texte bearbeiten" />
+          <QuickLink href="/admin/content/media" icon="🖼️" label="Media Manager" />
+          <QuickLink href="/admin/questions" icon="❓" label="Fragen verwalten" />
+          <QuickLink href="/admin/ebooks" icon="📚" label="E-Books verwalten" />
+        </div>
+      </div>
     </div>
   )
 }
