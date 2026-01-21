@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       if (!validation.success) {
         return NextResponse.json({
           error: 'Ungültige Section',
-          details: validation.error.errors
+          details: validation.error.issues
         }, { status: 400 })
       }
       usageSection = validation.data.usage_section
