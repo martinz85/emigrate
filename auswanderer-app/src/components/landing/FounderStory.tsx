@@ -7,32 +7,10 @@ export function FounderStory() {
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Photo */}
-          <div className="relative">
-            <div className="aspect-square bg-white/10 rounded-3xl flex items-center justify-center">
-              <div className="text-center">
-                <span className="text-8xl mb-4 block">👨‍💼</span>
-                <p className="text-white/60">Gründer-Foto</p>
-              </div>
-            </div>
-            
-            {/* Journey badges */}
-            <div className="absolute -bottom-4 -right-4 bg-white text-slate-900 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">🇵🇱</span>
-                <span className="text-xl">→</span>
-                <span className="text-3xl">🇩🇪</span>
-                <span className="text-xl">→</span>
-                <span className="text-3xl">🇸🇪</span>
-              </div>
-              <p className="text-xs text-slate-500 mt-2 text-center">2x ausgewandert</p>
-            </div>
-          </div>
-
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
           {/* Story */}
-          <div>
+          <div className="max-w-3xl mx-auto">
             <h2 className="font-heading text-3xl md:text-4xl font-bold mb-6">
               Über den Gründer
             </h2>
@@ -40,14 +18,12 @@ export function FounderStory() {
             <div className="space-y-4 text-lg text-white/90">
               <p>
                 „Ich bin selbst <strong>zweimal ausgewandert</strong>: Mit 3 Jahren 
-                von Polen nach Deutschland, und mit meiner Familie – zwei kleine 
-                Kinder im Gepäck – nach Südschweden."
+                von Polen nach Deutschland, und mit Anfang 30 mit meiner Familie – 
+                zwei kleine Kinder im Gepäck – nach Südschweden."
               </p>
               
               <p>
-                „Ich kenne <strong>jeden Schritt</strong> des Prozesses: Die 
-                Unsicherheit, die Bürokratie, die Fragen nach Finanzen, Jobs, 
-                Schulen. Und wie wichtig es ist, eine Community zu finden."
+                „Bei der <strong>Auswanderungsplanung</strong> kommen viele Fragen auf."
               </p>
               
               <p>
@@ -58,8 +34,19 @@ export function FounderStory() {
             </div>
             
             <div className="mt-8">
-              <p className="text-xl font-semibold">— Martin</p>
-              <p className="text-white/60">Gründer, Auswanderer-Plattform</p>
+              <p className="text-xl font-semibold mb-6">— Martin</p>
+              <p className="text-white/60 mb-6">Gründer, Auswanderer-Plattform</p>
+              
+              {/* Photo */}
+              <div className="flex justify-center">
+                <div className="w-32 h-32 rounded-2xl overflow-hidden shadow-xl ring-4 ring-white/20">
+                  <img 
+                    src="/Images/IMG_5003.jpg" 
+                    alt="Martin mit Familie in Schweden" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

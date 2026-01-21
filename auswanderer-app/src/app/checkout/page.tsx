@@ -18,7 +18,7 @@ function CheckoutContent() {
       price: '39,00 EUR',
       features: [
         'Vollständige 5-Seiten PDF',
-        'Alle 26 Kriterien analysiert',
+        'Alle persönlichen Kriterien analysiert',
         'Top 5 Länder mit Details',
         'Persönliche Empfehlung',
         'Konkrete nächste Schritte',

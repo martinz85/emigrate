@@ -151,7 +151,7 @@ ${nextCriterion.question}`,
             role: 'ai',
             content: `🎉 **Fantastisch! Deine Analyse ist fertig!**
 
-Ich habe alle 26 Kriterien analysiert und basierend auf deinen Präferenzen dein persönliches Länder-Ranking erstellt.
+Ich habe alle deine Kriterien analysiert und basierend auf deinen Präferenzen dein persönliches Länder-Ranking erstellt.
 
 **Dein Top-3:**
 🥇 **Portugal** - 92% Match

@@ -14,7 +14,7 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: 'Auswanderer-Plattform | Finde dein perfektes Auswanderungsland',
-  description: 'Unser AI-Assistent analysiert 26 personalisierte Kriterien und findet das Land, das perfekt zu dir passt. Kostenlose Vorschau, personalisierte PDF-Analyse.',
+  description: 'Unser AI analysiert, was DIR wichtig ist und findet das Land, das perfekt zu dir passt. Kostenlose Vorschau, personalisierte PDF-Analyse.',
   keywords: ['Auswandern', 'Emigration', 'Auswanderung', 'Zielland finden', 'AI Beratung', 'Expat'],
   authors: [{ name: 'Martin' }],
   openGraph: {

@@ -10,12 +10,12 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-2 mb-4">
               <span className="text-2xl">🌍</span>
               <span className="font-heading font-bold text-xl text-white">
-                Auswanderer
+                Auswander-Profi
               </span>
             </Link>
             <p className="text-sm max-w-md">
               Finde dein perfektes Auswanderungsland mit unserem AI-gestützten 
-              Analyse-Tool. 26 personalisierte Kriterien für deine Entscheidung.
+              Analyse-Tool. Auf dich zugeschnitten für deine Entscheidung.
             </p>
           </div>
 
@@ -38,6 +38,7 @@ export function Footer() {
               <li><Link href="/datenschutz" className="hover:text-white transition-colors">Datenschutz</Link></li>
               <li><Link href="/agb" className="hover:text-white transition-colors">AGB</Link></li>
               <li><Link href="/kontakt" className="hover:text-white transition-colors">Kontakt</Link></li>
+              <li><Link href="/my-purchases" className="hover:text-white transition-colors">Meine Käufe finden</Link></li>
             </ul>
           </div>
         </div>

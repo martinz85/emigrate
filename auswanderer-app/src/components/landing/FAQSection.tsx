@@ -8,7 +8,7 @@ export function FAQSection() {
   const faqs = [
     {
       question: 'Wie funktioniert die AI-Analyse?',
-      answer: 'Unser AI-Assistent führt dich durch 26 personalisierte Kriterien. Du gibst an, wie wichtig dir jedes Kriterium ist (1-5), und beantwortest Kontextfragen. Basierend auf deinen Antworten erstellen wir ein individuelles Länder-Ranking mit Empfehlungen.',
+      answer: 'Unser AI-Assistent stellt dir Fragen zu deinen persönlichen Prioritäten. Du gibst an, wie wichtig dir verschiedene Kriterien sind (1-5), und beantwortest Kontextfragen. Basierend auf deinen Antworten erstellen wir ein individuelles Länder-Ranking mit Empfehlungen.',
     },
     {
       question: 'Welche Länder werden analysiert?',

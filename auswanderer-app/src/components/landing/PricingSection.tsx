@@ -88,7 +88,7 @@ export function PricingSection() {
       description: 'Perfekt zum Ausprobieren',
       features: [
         'AI-Analyse starten',
-        '26 Kriterien gewichten',
+        'Persönliche Kriterien gewichten',
         '2-Seiten Vorschau',
         'Top 3 Länder sehen',
       ],
@@ -115,7 +115,7 @@ export function PricingSection() {
       features: [
         'Alles aus Free',
         'Vollständige PDF (5+ Seiten)',
-        'Detailmatrix aller 26 Kriterien',
+        'Detailmatrix aller Kriterien',
         'Persönliche Empfehlung',
         'Konkrete nächste Schritte',
       ],
@@ -222,13 +222,6 @@ export function PricingSection() {
           ))}
         </div>
 
-        {/* Money back guarantee */}
-        <div className="text-center mt-12">
-          <div className="inline-flex items-center gap-2 text-sm text-slate-600">
-            <span className="text-xl">🔒</span>
-            14 Tage Geld-zurück-Garantie bei PRO
-          </div>
-        </div>
       </div>
     </section>
   )

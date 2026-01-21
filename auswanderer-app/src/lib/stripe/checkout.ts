@@ -18,7 +18,7 @@ export const PRODUCTS: Record<string, Product> = {
   pdf_single: {
     id: 'pdf_single',
     name: 'Auswanderungsanalyse PDF',
-    description: 'Vollständige personalisierte Analyse mit 26 Kriterien',
+    description: 'Vollständige personalisierte Analyse auf dich zugeschnitten',
     price: 3900, // 39 EUR
     type: 'one_time',
   },

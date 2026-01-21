@@ -1,28 +1,30 @@
+import { ClipboardList, Sparkles, BarChart3, Rocket } from 'lucide-react'
+
 export function HowItWorks() {
   const steps = [
     {
       number: 1,
       title: 'Profil erstellen',
       description: 'Beantworte ein paar grundlegende Fragen zu deiner Situation.',
-      icon: '📝',
+      Icon: ClipboardList,
     },
     {
       number: 2,
-      title: 'AI-Chat starten',
-      description: 'Unser AI führt dich durch 26 personalisierte Kriterien.',
-      icon: '🤖',
+      title: 'AI-Analyse starten',
+      description: 'Beantworte Fragen zu deinen persönlichen Prioritäten.',
+      Icon: Sparkles,
     },
     {
       number: 3,
-      title: 'Analyse erhalten',
+      title: 'Ergebnis erhalten',
       description: 'Erhalte dein persönliches Länder-Ranking mit Empfehlungen.',
-      icon: '📊',
+      Icon: BarChart3,
     },
     {
       number: 4,
       title: 'Plan starten',
       description: 'Mit konkreten nächsten Schritten deinen Traum verwirklichen.',
-      icon: '🚀',
+      Icon: Rocket,
     },
   ]
 
@@ -51,7 +53,9 @@ export function HowItWorks() {
                 </div>
                 
                 {/* Icon */}
-                <div className="text-5xl mb-4 pt-4">{step.icon}</div>
+                <div className="mb-4 pt-4 flex justify-center">
+                  <step.Icon className="w-12 h-12 text-primary-500" />
+                </div>
                 
                 {/* Content */}
                 <h3 className="font-heading font-bold text-lg mb-2">{step.title}</h3>

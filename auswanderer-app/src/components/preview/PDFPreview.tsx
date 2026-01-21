@@ -27,7 +27,7 @@ export function PDFPreview() {
           Dein persönliches Länder-Ranking
         </h1>
         <p className="text-slate-600 max-w-xl mx-auto">
-          Basierend auf deinen 26 Kriterien haben wir die besten Länder für dich analysiert.
+          Basierend auf deinen persönlichen Kriterien haben wir die besten Länder für dich analysiert.
         </p>
       </div>
 
@@ -166,7 +166,7 @@ export function PDFPreview() {
             <div className="space-y-3 mb-6">
               <div className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>
-                <span className="text-sm">Detailmatrix aller 26 Kriterien</span>
+                <span className="text-sm">Detailmatrix aller Kriterien</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500">✓</span>

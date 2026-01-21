@@ -15,7 +15,7 @@
 5. **Zeitplanung** - Der realistische Fahrplan
 
 ### Teil 2: Das richtige Land finden (Kapitel 6-10)
-6. **Die 26 Kriterien erklärt** - Worauf es ankommt
+6. **Die wichtigsten Kriterien erklärt** - Worauf es ankommt
 7. **Länderprofile Europa** - EU, Schweiz, UK
 8. **Länderprofile Weltweit** - Amerika, Asien, Ozeanien
 9. **Vergleichsmethodik** - Objektiv bewerten

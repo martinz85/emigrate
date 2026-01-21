@@ -157,7 +157,7 @@ export function generatePreviewHtml(data: PDFData): string {
       <h3 style="color: #1F4E79; margin-bottom: 15px;">📊 Vollständige Analyse freischalten</h3>
       <p style="margin-bottom: 15px;">Die komplette PDF enthält:</p>
       <ul style="text-align: left; display: inline-block; margin-bottom: 20px;">
-        <li>Detailmatrix aller 26 Kriterien</li>
+        <li>Detailmatrix aller Kriterien</li>
         <li>Analyse aller Top 5 Länder</li>
         <li>Konkrete nächste Schritte</li>
         <li>Visa-Informationen</li>

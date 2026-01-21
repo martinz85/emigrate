@@ -13,8 +13,8 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
             <span className="text-2xl">🌍</span>
-            <span className="font-heading font-bold text-xl text-primary-500">
-              Auswanderer
+            <span className="font-heading font-bold text-xl text-primary-600">
+              Auswander-Profi
             </span>
           </Link>
 
