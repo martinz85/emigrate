@@ -10,7 +10,7 @@ alwaysApply: false
 
 | Key | Value |
 |-----|-------|
-| **Token** | *Lokal speichern - nicht in Git committen* |
+| **Token** | Siehe `.cursor/tokens.local` |
 | **Project** | `auswanderer-app` |
 | **Team** | `emigrates-projects` |
 | **Production URL** | `https://auswanderer-app.vercel.app` |

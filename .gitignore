@@ -1,3 +1,7 @@
+# Local tokens (never commit)
+.cursor/tokens.local
+*.tokens.local
+
 # Word temp files
 ~$*.docx
 
