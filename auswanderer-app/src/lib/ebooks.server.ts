@@ -17,6 +17,7 @@ export type { Ebook } from './ebooks'
 
 /**
  * Convert DB ebook to legacy Ebook format for backward compatibility
+ * Note: coverUrl is not generated here - should be done at page level for efficiency
  */
 function dbEbookToLegacy(dbEbook: DbEbook): Ebook {
   return {
@@ -40,6 +41,7 @@ function dbEbookToLegacy(dbEbook: DbEbook): Ebook {
     stripePriceId: dbEbook.stripe_price_id || undefined,
     pdfPath: dbEbook.pdf_path || undefined,
     coverPath: dbEbook.cover_path || undefined,
+    // coverUrl will be generated at page level for efficiency
   }
 }
 

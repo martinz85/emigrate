@@ -23,6 +23,7 @@ export interface Ebook {
   stripePriceId?: string // To be set after Stripe product creation
   pdfPath?: string // Supabase Storage path
   coverPath?: string // Supabase Storage path
+  coverUrl?: string // Signed URL for cover image (generated server-side)
 }
 
 export const EBOOKS: Ebook[] = [

@@ -38,7 +38,24 @@ export const dynamic = 'force-dynamic'
 /**
  * Convert DB ebook to client format
  */
-function dbEbookToClient(dbEbook: DbEbook): Ebook {
+async function dbEbookToClient(dbEbook: DbEbook, supabaseAdmin: ReturnType<typeof createAdminClient>): Promise<Ebook> {
+  // Generate cover URL if cover_path exists
+  let coverUrl: string | undefined = undefined
+  if (dbEbook.cover_path) {
+    try {
+      const { data: signedUrlData } = await supabaseAdmin.storage
+        .from('ebooks')
+        .createSignedUrl(dbEbook.cover_path, 24 * 3600) // 24 hours
+      
+      if (signedUrlData?.signedUrl) {
+        coverUrl = signedUrlData.signedUrl
+      }
+    } catch (error) {
+      // Silently fail - cover URL generation is not critical
+      console.warn(`Failed to generate cover URL for ebook ${dbEbook.id}:`, error)
+    }
+  }
+
   return {
     id: dbEbook.id,
     slug: dbEbook.slug,
@@ -58,6 +75,7 @@ function dbEbookToClient(dbEbook: DbEbook): Ebook {
     stripePriceId: dbEbook.stripe_price_id || undefined,
     pdfPath: dbEbook.pdf_path || undefined,
     coverPath: dbEbook.cover_path || undefined,
+    coverUrl,
   }
 }
 
@@ -85,8 +103,9 @@ export default async function EbooksPage() {
       const regularEbooks = dbEbooks.filter(e => !e.is_bundle)
       const bundleEbook = dbEbooks.find(e => e.is_bundle)
       
-      ebooks = regularEbooks.map(dbEbookToClient)
-      bundle = bundleEbook ? dbEbookToClient(bundleEbook) : null
+      // Convert with cover URLs (async)
+      ebooks = await Promise.all(regularEbooks.map(e => dbEbookToClient(e, supabaseAdmin)))
+      bundle = bundleEbook ? await dbEbookToClient(bundleEbook, supabaseAdmin) : null
     }
 
     // Check user auth and status

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Ebook, formatEbookPrice } from '@/lib/ebooks'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -24,6 +24,8 @@ export function EbookCard({
 }: EbookCardProps) {
   const hasAccess = isPro || hasPurchased
   const [isDownloading, setIsDownloading] = useState(false)
+  const [coverUrl, setCoverUrl] = useState<string | null>(ebook.coverUrl || null)
+  const [coverError, setCoverError] = useState(false)
 
   const handleBuyClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -36,6 +38,34 @@ export function EbookCard({
     e.preventDefault()
     onToggleDetails?.()
   }
+
+  // Fetch cover URL if not provided server-side but coverPath exists
+  useEffect(() => {
+    if (ebook.coverUrl) {
+      // Server-side URL already provided
+      setCoverUrl(ebook.coverUrl)
+    } else if (ebook.coverPath) {
+      // Need to fetch from API
+      fetch(`/api/ebooks/${ebook.id}/cover`)
+        .then(res => {
+          if (!res.ok) {
+            setCoverError(true)
+            return null
+          }
+          return res.json()
+        })
+        .then((data: { coverUrl?: string; error?: string } | null) => {
+          if (data?.coverUrl) {
+            setCoverUrl(data.coverUrl)
+          } else if (data) {
+            setCoverError(true)
+          }
+        })
+        .catch(() => {
+          setCoverError(true)
+        })
+    }
+  }, [ebook.id, ebook.coverPath, ebook.coverUrl, coverUrl])
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -73,11 +103,22 @@ export function EbookCard({
 
       {/* Book Cover - Centered */}
       <div className="flex justify-center mb-5">
-        <div
-          className={`w-24 h-32 sm:w-28 sm:h-36 rounded-lg bg-gradient-to-br ${ebook.color} flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform`}
-        >
-          <span className="text-4xl sm:text-5xl">{ebook.emoji}</span>
-        </div>
+        {coverUrl && !coverError ? (
+          <div className="w-24 h-32 sm:w-28 sm:h-36 rounded-lg overflow-hidden shadow-lg transform hover:scale-105 transition-transform">
+            <img
+              src={coverUrl}
+              alt={`Cover: ${ebook.title}`}
+              className="w-full h-full object-cover"
+              onError={() => setCoverError(true)}
+            />
+          </div>
+        ) : (
+          <div
+            className={`w-24 h-32 sm:w-28 sm:h-36 rounded-lg bg-gradient-to-br ${ebook.color} flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform`}
+          >
+            <span className="text-4xl sm:text-5xl">{ebook.emoji}</span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
